@@ -726,7 +726,7 @@ def iniciar_servidor():
     verificar_eula("servidor")
     init_db(config["DB_PATH"])
     configurar_logging(config)
-    servidor_CnC()
+    servidor_CnC(config["HOST"], config["PORT"])
 
 if __name__ == "__main__":
     iniciar_servidor()
