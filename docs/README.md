@@ -41,6 +41,20 @@ python3 servidor.py
 - 🕵️‍♂️ Incorporación de técnicas de ofuscación en la comunicación.
 - 📜 Registro detallado de comandos y respuestas para auditoría y depuración.
 
+/C-CMEMO/              ← 📌 Carpeta principal del proyecto
+│── /config/           ← 📌 Configuración del proyecto
+│   └── config.ini
+│── /docs/             ← 📌 Documentación
+│   ├── LICENSE.md
+│   └── README.md
+│── /logs/             ← 📌 Aquí se guardarán los logs
+│   └── client.log
+│── /src/              ← 📌 Código fuente
+│   ├── /bbdd/         ← 📌 Base de datos
+│   │   └── bots.bd
+│   ├── clienteinfectado.py
+│   └── servidor.py
+
 ## ⚠️ Nota Importante
 
 Este proyecto está diseñado únicamente para uso en entornos de prueba y con propósitos educativos. No se debe utilizar para actividades no autorizadas.

