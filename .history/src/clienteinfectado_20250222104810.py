@@ -128,31 +128,33 @@ def validar_puerto(port):
         return False
 
 def esEntornoCloud():
+    
     """Indica si el programa se ejecuta en un entorno de cloud computing.
 
-    La función intenta conectarse a los puntos de metadata de varios proveedores de cloud
-    (AWS, Google Cloud, Azure, DigitalOcean) y devuelve True si alguno de ellos responde.
-    Si no se logra conectar a ninguno de ellos, se devuelve False.
+    La función intenta conectarse a los puntos de metadata de AWS y Google Cloud
+    y devuelve True si alguno de ellos responde. Si no se logra conectar a
+    ninguno de ellos, se devuelve False.
 
     Returns:
         bool: True si se ejecuta en un entorno de cloud, False en caso contrario.
     """
-    cloud_metadata_urls = [
-        "http://169.254.169.254/latest/meta-data/",  # AWS
-        "http://metadata.google.internal/",  # Google Cloud
-        "http://169.254.169.254/metadata/v1/",  # DigitalOcean
-        "http://169.254.169.254/metadata/instance?api-version=2021-02-01"  # Azure
-    ]
+    try:
+        # AWS Metadata
+        if requests.get("http://169.254.169.254/latest/meta-data/", timeout=1).status_code == 200:
+            return True
+    except requests.exceptions.RequestException:
+        pass
+    except Exception as e:
+        logging.error(f"Error al detectar el entorno cloud: {e}")
 
-    for url in cloud_metadata_urls:
-        try:
-            if requests.get(url, timeout=1).status_code == 200:
-                logging.info(f"Entorno de cloud computing detectado: {url}")
-                return True
-        except requests.exceptions.RequestException:
-            continue
-        except Exception as e:
-            logging.error(f"Error al detectar el entorno cloud: {e}")
+    try:
+        # Google Cloud Metadata
+        if requests.get("http://metadata.google.internal/", timeout=1).status_code == 200:
+            return True
+    except requests.exceptions.RequestException:
+        pass
+    except Exception as e:
+        logging.error(f"Error al detectar el entorno cloud: {e}")
 
     return False
 
