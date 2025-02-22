@@ -1,2 +1,20 @@
-requests
+Flask>=2.0.1
+Pillow>=10.0.0
+psutil>=5.9.0
+requests>=2.31.0
+discord.py>=2.3.2
+waitress>=2.1.2
+pynput>=1.7.6
 configparser
+python-xlib>=0.33; sys_platform == 'linux'
+Werkzeug>=2.0.0
+click>=8.0.0
+mss>=9.0.1
+opencv-python>=4.8.0
+numpy>=1.24.0
+scapy>=2.5.0
+# Removed pywin32 dependency since we're using ctypes directly
+pycryptodomex>=3.19.0
+pyaudio>=0.2.13
+python-ldap3>=2.9.1
+dnspython>=2.4.2

