@@ -2,3 +2,5 @@ bbdd/*
 docs/eula_cliente.txt
 docs/eula_servidor.txt
 logs/*
+.lh
+.lh/*
