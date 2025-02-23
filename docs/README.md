@@ -1,18 +1,23 @@
+# C-CMemo - Framework de Comando y Control
 
-# C-CMemo
+C-CMemo es un framework de Comando y Control (C&C) diseñado con fines educativos que permite gestionar bots a través de Discord y una API REST. El sistema incluye características avanzadas de logging, autenticación y manejo de bots.
 
-C-CMemo es un framework de Comando y Control (C&C) para gestionar bots a través de un bot de Discord y una API de servidor. Este proyecto es solo para fines educativos y de investigación.
+⚠️ **AVISO LEGAL**: Este software es exclusivamente para propósitos educativos y de investigación en entornos controlados.
 
-## Características
+## 📋 Características Principales
 
-- Gestionar bots a través de un bot de Discord.
-- Enviar comandos a los bots.
-- Listar bots conectados.
-- Cerrar conexiones con bots específicos.
-- Ejecutar scripts de forma remota.
-- Asegurar persistencia en los bots.
+- 🤖 Bot de Discord integrado para control remoto
+- 🌐 API REST para gestión programática
+- 📊 Panel de administración con estadísticas
+- 🔒 Sistema de autenticación y encriptación
+- 📝 Logging extensivo y monitoreo
+- 🔄 Persistencia y gestión de estados
+- 📸 Captura de pantalla y webcam
+- 🎤 Grabación de audio
+- ⌨️ Keylogger integrado
+- 🌍 Soporte para Windows y Linux
 
-## Estructura del Proyecto
+## 🏗️ Estructura del Proyecto
 
 ```
 C-CMemo/
