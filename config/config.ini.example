@@ -1,4 +1,5 @@
 [NETWORK]
+# Configuración del servidor C&C
 HOST = 127.0.0.1
 PORT = 5001
 API_PORT = 5000
@@ -6,10 +7,12 @@ MAX_CONNECTIONS = 100
 TIMEOUT = 30
 
 [DATABASE]
+# Configuración de la base de datos
 DB_PATH = db/botnet.db
 DB_BACKUP_PATH = db/backup/
 
 [LOGGING]
+# Configuración de logs
 LOG_DIR = logs
 SERVER_LOG_FILE = server.log
 BOT_LOG_FILE = bots.log
@@ -18,6 +21,7 @@ LOG_LEVEL = INFO
 LOG_FORMAT = %%(asctime)s - %%(levelname)s - %%(message)s
 
 [SECURITY]
+# Configuración de seguridad
 ENABLE_SSL = false
 SSL_CERT = certs/server.crt
 SSL_KEY = certs/server.key
@@ -27,6 +31,7 @@ MAX_FAILED_ATTEMPTS = 3
 LOCKOUT_TIME = 300
 
 [FEATURES]
+# Características del servidor
 ENABLE_FILE_OPERATIONS = true
 ENABLE_SCREENSHOTS = true
 ENABLE_KEYLOGGER = false
@@ -35,6 +40,7 @@ PERSISTENCE = true
 AUTO_UPDATE = true
 
 [NOTIFICATIONS]
+# Configuración de notificaciones
 ENABLE_DISCORD = true
 ENABLE_EMAIL = false
 EMAIL_SMTP_SERVER = smtp.example.com

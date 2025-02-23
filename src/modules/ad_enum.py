@@ -327,3 +327,23 @@ class ADEnumerator:
             self.server = None
         except Exception as e:
             logging.error(f"Error desconectando de AD: {e}")
+
+"""
+Módulo para enumeración de Active Directory
+"""
+
+class ADEnum:
+    def __init__(self):
+        self.domain = None
+        
+    def enumerate_users(self):
+        """Enumera usuarios del dominio"""
+        pass
+        
+    def enumerate_groups(self):
+        """Enumera grupos del dominio"""
+        pass
+        
+    def enumerate_computers(self):
+        """Enumera computadoras del dominio"""
+        pass

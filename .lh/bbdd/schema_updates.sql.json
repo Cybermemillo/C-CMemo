@@ -1,0 +1,18 @@
+{
+    "sourceFile": "bbdd/schema_updates.sql",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1740264784066,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1740264784066,
+            "name": "Commit-0",
+            "content": "\r\n-- Tabla para estadísticas del sistema\r\nCREATE TABLE IF NOT EXISTS system_stats (\r\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\r\n    timestamp TIMESTAMP,\r\n    cpu_usage FLOAT,\r\n    mem_usage FLOAT,\r\n    disk_usage FLOAT,\r\n    active_bots INTEGER,\r\n    data_transferred BIGINT\r\n);\r\n\r\n-- Tabla para alertas\r\nCREATE TABLE IF NOT EXISTS alerts (\r\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\r\n    type TEXT,\r\n    timestamp TIMESTAMP,\r\n    details JSON,\r\n    server_stats JSON,\r\n    acknowledged BOOLEAN DEFAULT 0\r\n);\r\n\r\n-- Índices para mejor rendimiento\r\nCREATE INDEX IF NOT EXISTS idx_command_history_bot_id ON command_history(bot_id);\r\nCREATE INDEX IF NOT EXISTS idx_command_history_timestamp ON command_history(timestamp);\r\nCREATE INDEX IF NOT EXISTS idx_alerts_type ON alerts(type);\r\nCREATE INDEX IF NOT EXISTS idx_system_stats_timestamp ON system_stats(timestamp);\r\n"
+        }
+    ]
+}

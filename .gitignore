@@ -1,8 +1,52 @@
-bbdd/*
-docs/eula_cliente.txt
-docs/eula_servidor.txt
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribución/empaquetado
+dist/
+build/
+*.egg-info/
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+
+# Logs
 logs/*
-.lh
-.lh/*
-src/bbdd/*
-config/config_bot.ini
+!logs/.gitkeep
+
+# Base de datos
+*.db
+*.sqlite3
+
+# Archivos de configuración sensibles
+config/*
+!config/config.ini.example
+!config/config_bot.ini.example
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDEs y editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+tmp/
+temp/
+
+# Archivos de credenciales
+*.pem
+*.key
+*.crt
+.env
+
+# Mantener estructura de carpetas
+!.gitkeep

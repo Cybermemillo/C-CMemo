@@ -1,0 +1,66 @@
+{
+    "sourceFile": "requirements.txt",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 12,
+            "patches": [
+                {
+                    "date": 1740260939807,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1740261928136,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,5 +3,7 @@\n psutil==5.9.0\r\n requests==2.31.0\r\n discord.py==2.3.2\r\n waitress==2.1.2\r\n+pywin32==306\r\n+pynput==1.7.6\r\n configparser\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740261966493,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -5,5 +5,6 @@\n discord.py==2.3.2\r\n waitress==2.1.2\r\n pywin32==306\r\n pynput==1.7.6\r\n-configparser\n\\ No newline at end of file\n+configparser\r\n+python-xlib; sys_platform == 'linux'\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740262073176,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,10 +1,12 @@\n-flask==2.0.1\r\n-pillow==9.5.0\r\n-psutil==5.9.0\r\n-requests==2.31.0\r\n-discord.py==2.3.2\r\n-waitress==2.1.2\r\n-pywin32==306\r\n-pynput==1.7.6\r\n+Flask>=2.0.1\r\n+Pillow>=10.0.0\r\n\\ No newline at end of file\n+psutil>=5.9.0\r\n+requests>=2.31.0\r\n+discord.py>=2.3.2\r\n+waitress>=2.1.2\r\n+pywin32>=306\r\n+pynput>=1.7.6\r\n configparser\r\n-python-xlib; sys_platform == 'linux'\n+python-xlib>=0.33; sys_platform == 'linux'\r\n+Werkzeug>=2.0.0\r\n+click>=8.0.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740262211612,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,9 +3,8 @@\n psutil>=5.9.0\r\n requests>=2.31.0\r\n discord.py>=2.3.2\r\n waitress>=2.1.2\r\n-pywin32>=306\r\n pynput>=1.7.6\r\n configparser\r\n python-xlib>=0.33; sys_platform == 'linux'\r\n Werkzeug>=2.0.0\r\n"
+                },
+                {
+                    "date": 1740262283868,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,5 +7,8 @@\n pynput>=1.7.6\r\n configparser\r\n python-xlib>=0.33; sys_platform == 'linux'\r\n Werkzeug>=2.0.0\r\n-click>=8.0.0\n\\ No newline at end of file\n+click>=8.0.0\r\n+mss>=9.0.1\r\n+opencv-python>=4.8.0\r\n+numpy>=1.24.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740263144003,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,5 +10,7 @@\n Werkzeug>=2.0.0\r\n click>=8.0.0\r\n mss>=9.0.1\r\n opencv-python>=4.8.0\r\n-numpy>=1.24.0\n\\ No newline at end of file\n+numpy>=1.24.0\r\n+netifaces>=0.11.0\r\n+scapy>=2.5.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740263263123,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,6 +11,5 @@\n click>=8.0.0\r\n mss>=9.0.1\r\n opencv-python>=4.8.0\r\n numpy>=1.24.0\r\n-netifaces>=0.11.0\r\n scapy>=2.5.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740263585470,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,5 +11,7 @@\n click>=8.0.0\r\n mss>=9.0.1\r\n opencv-python>=4.8.0\r\n numpy>=1.24.0\r\n-scapy>=2.5.0\n\\ No newline at end of file\n+scapy>=2.5.0\r\n+pywin32>=305\r\n+pycryptodomex>=3.19.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740263720842,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,6 +12,6 @@\n mss>=9.0.1\r\n opencv-python>=4.8.0\r\n numpy>=1.24.0\r\n scapy>=2.5.0\r\n-pywin32>=305\r\n+pywin32>=305; platform_system == \"Windows\"\r\n pycryptodomex>=3.19.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740263845064,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,6 +12,6 @@\n mss>=9.0.1\r\n opencv-python>=4.8.0\r\n numpy>=1.24.0\r\n scapy>=2.5.0\r\n-pywin32>=305; platform_system == \"Windows\"\r\n+# Removed pywin32 dependency since we're using ctypes directly\r\n pycryptodomex>=3.19.0\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740264326745,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,5 +13,8 @@\n opencv-python>=4.8.0\r\n numpy>=1.24.0\r\n scapy>=2.5.0\r\n # Removed pywin32 dependency since we're using ctypes directly\r\n-pycryptodomex>=3.19.0\n\\ No newline at end of file\n+pycryptodomex>=3.19.0\r\n+pyaudio>=0.2.13\r\n+ldap3>=2.9\r\n+dnspython>=2.4.2\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740264360907,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -15,6 +15,6 @@\n scapy>=2.5.0\r\n # Removed pywin32 dependency since we're using ctypes directly\r\n pycryptodomex>=3.19.0\r\n pyaudio>=0.2.13\r\n-ldap3>=2.9\r\n+python-ldap3>=2.9.1\r\n dnspython>=2.4.2\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1740260939807,
+            "name": "Commit-0",
+            "content": "flask==2.0.1\r\npillow==9.5.0\r\npsutil==5.9.0\r\nrequests==2.31.0\r\ndiscord.py==2.3.2\r\nwaitress==2.1.2\r\nconfigparser"
+        }
+    ]
+}

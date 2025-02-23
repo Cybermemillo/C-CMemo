@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/modules/config.py",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1740266222633,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1740266222633,
+            "name": "Commit-0",
+            "content": "\"\"\"\r\nConfiguración compartida para los módulos.\r\n\"\"\"\r\n\r\nfrom pathlib import Path\r\n\r\n# Rutas base\r\nBASE_DIR = Path(__file__).parent.parent\r\nMODULES_DIR = BASE_DIR / \"modules\"\r\nDB_DIR = BASE_DIR / \"bbdd\"\r\nLOGS_DIR = BASE_DIR / \"logs\"\r\nTEMP_DIR = BASE_DIR / \"temp\"\r\n\r\n# Asegurar que existan los directorios necesarios\r\nfor directory in [DB_DIR, LOGS_DIR, TEMP_DIR]:\r\n    directory.mkdir(parents=True, exist_ok=True)\r\n\r\n# Configuración de bases de datos\r\nDB_CONFIG = {\r\n    \"bots\": str(DB_DIR / \"bots.db\"),\r\n    \"commands\": str(DB_DIR / \"commands.db\"),\r\n    \"stats\": str(DB_DIR / \"stats.db\")\r\n}\r\n\r\n# Configuración de módulos\r\nMODULE_CONFIG = {\r\n    \"max_command_history\": 1000,\r\n    \"command_timeout\": 30,\r\n    \"max_file_size\": 50 * 1024 * 1024,  # 50MB\r\n    \"allowed_file_types\": [\".txt\", \".log\", \".py\", \".ps1\", \".bat\", \".sh\"],\r\n    \"blocked_commands\": [\"format\", \"mkfs\", \"dd\", \"rm -rf /\"],\r\n    \"stats_interval\": 60,  # segundos\r\n    \"cleanup_interval\": 3600  # 1 hora\r\n}\r\n"
+        }
+    ]
+}

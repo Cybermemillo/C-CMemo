@@ -1,0 +1,70 @@
+{
+    "sourceFile": "config/config_bot.ini",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 13,
+            "patches": [
+                {
+                    "date": 1740247719112,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1740248123921,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,6 @@\n [DISCORD]\r\n-BOT_TOKEN = your_discord_bot_token\r\n+BOT_TOKEN = your_actual_discord_bot_token\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n"
+                },
+                {
+                    "date": 1740265143997,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,6 @@\n [DISCORD]\r\n-BOT_TOKEN = your_actual_discord_bot_token\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GVTTai.PXfapJhNyaDyfP0qgPTO28ryLuzZ8mMOE_PE40\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n"
+                },
+                {
+                    "date": 1740303147351,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,13 @@\n [DISCORD]\r\n-BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GVTTai.PXfapJhNyaDyfP0qgPTO28ryLuzZ8mMOE_PE40\r\n+BOT_TOKEN = tu_token_de_discord_aqui\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n+COMMAND_PREFIX = !\r\n+ADMIN_ROLES = Admin,Administrator\r\n+ALLOWED_CHANNELS = bot-commands,admin-channel\r\n+\r\n+[LOGGING]\r\n+LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740303562277,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,7 @@\n [DISCORD]\r\n-BOT_TOKEN = tu_token_de_discord_aqui\r\n+# Reemplazar con el token real del bot de Discord\r\n+BOT_TOKEN = MTE0ODYyNDM5MTExNzU3MjE4Ng.GvxIOK.jvxIOKjvxIOKjvxIOKjvxIOKjvxIOK\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n"
+                },
+                {
+                    "date": 1740303575023,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n [DISCORD]\r\n # Reemplazar con el token real del bot de Discord\r\n-BOT_TOKEN = MTE0ODYyNDM5MTExNzU3MjE4Ng.GvxIOK.jvxIOKjvxIOKjvxIOKjvxIOKjvxIOK\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.G5bXeS.OMZl9VKiVwEyX3m0f0RRWlDdl3SSvTvozWYVLc\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n"
+                },
+                {
+                    "date": 1740303619661,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n [DISCORD]\r\n # Reemplazar con el token real del bot de Discord\r\n-BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.G5bXeS.OMZl9VKiVwEyX3m0f0RRWlDdl3SSvTvozWYVLc\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n"
+                },
+                {
+                    "date": 1740303770411,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,8 +7,8 @@\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n COMMAND_PREFIX = !\r\n ADMIN_ROLES = Admin,Administrator\r\n-ALLOWED_CHANNELS = bot-commands,admin-channel\r\n+ALLOWED_CHANNELS = comandos,admin-channel\r\n \r\n [LOGGING]\r\n LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740303778093,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,14 @@\n+[DISCORD]\r\n+# Reemplazar con el token real del bot de Discord\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n+CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n+COMMANDS_CHANNEL_ID = 1342909193794879529\r\n+GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n+SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n+BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n+COMMAND_PREFIX = !\r\n+ADMIN_ROLES = Admin,Administrator\r\n+ALLOWED_CHANNELS = comandos,admin-channel\r\n+\r\n+[LOGGING]\r\n+LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740309356171,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,9 +1,10 @@\n [DISCORD]\r\n-# Reemplazar con el token real del bot de Discord\r\n-BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n+BOT_TOKEN = tu_token_aqui\r\n+WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n+NOTIFICATION_CHANNEL = 1343173249202262076\r\n+COMMAND_CHANNEL = 1342909193794879529\r\n CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n-COMMANDS_CHANNEL_ID = 1342909193794879529\r\n GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n COMMAND_PREFIX = !\r\n@@ -11,18 +12,4 @@\n ALLOWED_CHANNELS = comandos,admin-channel\r\n \r\n [LOGGING]\r\n LOG_LEVEL = INFO\r\n-[DISCORD]\r\n-# Reemplazar con el token real del bot de Discord\r\n-BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n-CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n-COMMANDS_CHANNEL_ID = 1342909193794879529\r\n-GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n-SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n-BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n-COMMAND_PREFIX = !\r\n-ADMIN_ROLES = Admin,Administrator\r\n-ALLOWED_CHANNELS = comandos,admin-channel\r\n-\r\n-[LOGGING]\r\n-LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740309361403,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,15 @@\n+[DISCORD]\r\n+BOT_TOKEN = tu_token_aqui\r\n+WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n+NOTIFICATION_CHANNEL = 1343173249202262076\r\n+COMMAND_CHANNEL = 1342909193794879529\r\n+CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n+GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n+SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n+BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n+COMMAND_PREFIX = !\r\n+ADMIN_ROLES = Admin,Administrator\r\n+ALLOWED_CHANNELS = comandos,admin-channel\r\n+\r\n+[LOGGING]\r\n+LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740309417343,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,15 @@\n+[DISCORD]\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n+WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n+NOTIFICATION_CHANNEL = 1343173249202262076\r\n+COMMAND_CHANNEL = 1342909193794879529\r\n+CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n+GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n+SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n+BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n+COMMAND_PREFIX = !\r\n+ADMIN_ROLES = Admin,Administrator\r\n+ALLOWED_CHANNELS = comandos,admin-channel\r\n+\r\n+[LOGGING]\r\n+LOG_LEVEL = INFO\r\n"
+                },
+                {
+                    "date": 1740311319196,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,45 +1,41 @@\n [DISCORD]\r\n-BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n-WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n-NOTIFICATION_CHANNEL = 1343173249202262076\r\n-COMMAND_CHANNEL = 1342909193794879529\r\n-CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n-GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n-SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n-BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n+BOT_TOKEN = your_bot_token_here\r\n+WEBHOOK_URL = your_webhook_url_here\r\n COMMAND_PREFIX = !\r\n-ADMIN_ROLES = Admin,Administrator\r\n-ALLOWED_CHANNELS = comandos,admin-channel\r\n+ADMIN_ROLE_ID = 123456789\r\n+NOTIFICATION_CHANNEL_ID = 123456789\r\n+ERROR_CHANNEL_ID = 123456789\r\n+LOG_CHANNEL_ID = 123456789\r\n \r\n-[LOGGING]\r\n-LOG_LEVEL = INFO\r\n-[DISCORD]\r\n-BOT_TOKEN = tu_token_aqui\r\n-WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n-NOTIFICATION_CHANNEL = 1343173249202262076\r\n-COMMAND_CHANNEL = 1342909193794879529\r\n-CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n-GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n-SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n-BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n-COMMAND_PREFIX = !\r\n-ADMIN_ROLES = Admin,Administrator\r\n-ALLOWED_CHANNELS = comandos,admin-channel\r\n+[COMMANDS]\r\n+ALLOW_SYSTEM_COMMANDS = true\r\n+ALLOW_FILE_OPERATIONS = true\r\n+ALLOW_NETWORK_COMMANDS = true\r\n+ALLOW_PROCESS_MANAGEMENT = true\r\n+MAX_COMMAND_LENGTH = 1000\r\n \r\n+[NOTIFICATIONS]\r\n+NOTIFY_ON_BOT_CONNECT = true\r\n+NOTIFY_ON_BOT_DISCONNECT = true\r\n+NOTIFY_ON_ERROR = true\r\n+NOTIFY_ON_COMMAND = true\r\n+EMBED_COLOR_SUCCESS = 3066993\r\n+EMBED_COLOR_ERROR = 15158332\r\n+EMBED_COLOR_INFO = 3447003\r\n+\r\n+[RATE_LIMITING]\r\n+COMMANDS_PER_MINUTE = 10\r\n+MESSAGES_PER_MINUTE = 30\r\n+COOLDOWN_DURATION = 60\r\n+\r\n [LOGGING]\r\n LOG_LEVEL = INFO\r\n-[DISCORD]\r\n-BOT_TOKEN = tu_token_aqui\r\n-WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n-NOTIFICATION_CHANNEL = 1343173249202262076\r\n-COMMAND_CHANNEL = 1342909193794879529\r\n-CONNECTIONS_CHANNEL_ID = 1342904780506398781\r\n-GENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\n-SCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\n-BOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n-COMMAND_PREFIX = !\r\n-ADMIN_ROLES = Admin,Administrator\r\n-ALLOWED_CHANNELS = comandos,admin-channel\r\n+LOG_FORMAT = %%(asctime)s - %%(levelname)s - %%(message)s\r\n+LOG_FILE = logs/discord_bot.log\r\n+ENABLE_DEBUG = false\r\n \r\n-[LOGGING]\r\n-LOG_LEVEL = INFO\r\n+[SECURITY]\r\n+ALLOWED_GUILDS = 123456789,987654321\r\n+BLOCKED_USERS = 11111111,22222222\r\n+REQUIRED_PERMISSIONS = 8\r\n+COMMAND_TIMEOUT = 30\r\n"
+                },
+                {
+                    "date": 1740311344479,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n [DISCORD]\r\n-BOT_TOKEN = your_bot_token_here\r\n-WEBHOOK_URL = your_webhook_url_here\r\n+BOT_TOKEN = MTM0Mjg5NjcxNDUyNDI2NjU2OQ.GPxXfn.pGwpRVm2adSFE7whjIvLly8krQH0pdIG3r97iw\r\n+WEBHOOK_URL = https://discord.com/api/webhooks/1343179145110098031/su5cLWdXeb5mlmTpgU-0bmWjqhR3Jrj6TSOqGJc2zBD6mItfrdr5qWeiFf_Hj9KzXFT5\r\n COMMAND_PREFIX = !\r\n ADMIN_ROLE_ID = 123456789\r\n NOTIFICATION_CHANNEL_ID = 123456789\r\n ERROR_CHANNEL_ID = 123456789\r\n"
+                }
+            ],
+            "date": 1740247719112,
+            "name": "Commit-0",
+            "content": "[DISCORD]\r\nBOT_TOKEN = your_discord_bot_token\r\nCONNECTIONS_CHANNEL_ID = 1342904780506398781\r\nCOMMANDS_CHANNEL_ID = 1342909193794879529\r\nGENERIC_RESPONSES_CHANNEL_ID = 1342904579783921784\r\nSCRIPT_RESPONSES_CHANNEL_ID = 1342904625405100123\r\nBOT_INFO_RESPONSES_CHANNEL_ID = 1342904718003015690\r\n"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "sourceFile": ".gitignore",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 5,
+            "patches": [
+                {
+                    "date": 1740218676454,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1740218685806,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,6 @@\n bbdd/*\r\n docs/eula_cliente.txt\r\n docs/eula_servidor.txt\r\n logs/*\r\n+.lh\r\n .lh/*\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740221908183,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,5 +2,6 @@\n docs/eula_cliente.txt\r\n docs/eula_servidor.txt\r\n logs/*\r\n .lh\r\n-.lh/*\n\\ No newline at end of file\n+.lh/*\r\n+src/bbdd/*\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740247852175,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,5 +3,6 @@\n docs/eula_servidor.txt\r\n logs/*\r\n .lh\r\n .lh/*\r\n-src/bbdd/*\n\\ No newline at end of file\n+src/bbdd/*\r\n+config/config_bot.ini\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740247888268,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,8 @@\n+bbdd/*\r\n+docs/eula_cliente.txt\r\n+docs/eula_servidor.txt\r\n+logs/*\r\n+.lh\r\n+.lh/*\r\n+src/bbdd/*\r\n+config/config_bot.ini\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1740311145401,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,16 +1,52 @@\n-bbdd/*\r\n-docs/eula_cliente.txt\r\n-docs/eula_servidor.txt\r\n+# Archivos de Python\r\n+__pycache__/\r\n+*.py[cod]\r\n+*$py.class\r\n+*.so\r\n+\r\n+# Distribución/empaquetado\r\n+dist/\r\n+build/\r\n+*.egg-info/\r\n+\r\n+# Entornos virtuales\r\n+venv/\r\n\\ No newline at end of file\n+env/\r\n+ENV/\r\n+\r\n+# Logs\r\n logs/*\r\n-.lh\r\n-.lh/*\r\n-src/bbdd/*\r\n-config/config_bot.ini\n-bbdd/*\r\n-docs/eula_cliente.txt\r\n-docs/eula_servidor.txt\r\n-logs/*\r\n-.lh\r\n-.lh/*\r\n-src/bbdd/*\r\n-config/config_bot.ini\n+!logs/.gitkeep\r\n+\r\n+# Base de datos\r\n+*.db\r\n+*.sqlite3\r\n+\r\n+# Archivos de configuración sensibles\r\n+config/*\r\n+!config/config.ini.example\r\n+!config/config_bot.ini.example\r\n+\r\n+# Archivos del sistema\r\n+.DS_Store\r\n+Thumbs.db\r\n+\r\n+# IDEs y editores\r\n+.idea/\r\n+.vscode/\r\n+*.swp\r\n+*.swo\r\n+*~\r\n+\r\n+# Archivos temporales\r\n+tmp/\r\n+temp/\r\n+\r\n+# Archivos de credenciales\r\n+*.pem\r\n+*.key\r\n+*.crt\r\n+.env\r\n+\r\n+# Mantener estructura de carpetas\r\n+!.gitkeep\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1740218676454,
+            "name": "Commit-0",
+            "content": "bbdd/*\r\ndocs/eula_cliente.txt\r\ndocs/eula_servidor.txt\r\nlogs/*\r\n.lh/*"
+        }
+    ]
+}

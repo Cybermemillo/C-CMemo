@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/modules/file_operations.py",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1740260788790,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1740261419632,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -94,5 +94,9 @@\n         dict: Diccionario con el resultado de la operación\r\n             - success (bool): Si la operación fue exitosa\r\n             - error (str, opcional): Mensaje de error en caso de fallo\r\n     \"\"\"\r\n-    try:\n\\ No newline at end of file\n+    try:\r\n+        if os.path.isfile(path):\r\n+            os.remove(path)\r\n+        elif os.path.isdir(path):\r\n+            shutil.rmtree(path)\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1740260788790,
+            "name": "Commit-0",
+            "content": "import os\r\nimport shutil\r\nimport base64\r\nimport requests\r\n\r\ndef list_directory(path=\".\"):\r\n    \"\"\"Lista archivos y carpetas en un directorio.\"\"\"\r\n    try:\r\n        items = []\r\n        for item in os.listdir(path):\r\n            full_path = os.path.join(path, item)\r\n            item_info = {\r\n                'name': item,\r\n                'path': full_path,\r\n                'type': 'directory' if os.path.isdir(full_path) else 'file',\r\n                'size': os.path.getsize(full_path) if os.path.isfile(full_path) else 0,\r\n                'modified': os.path.getmtime(full_path)\r\n            }\r\n            items.append(item_info)\r\n        return {'success': True, 'items': items}\r\n    except Exception as e:\r\n        return {'success': False, 'error': str(e)}\r\n\r\ndef upload_file(file_path, file_data):\r\n    \"\"\"Guarda un archivo recibido en base64.\"\"\"\r\n    try:\r\n        file_content = base64.b64decode(file_data)\r\n        with open(file_path, 'wb') as f:\r\n            f.write(file_content)\r\n        return {'success': True}\r\n    except Exception as e:\r\n        return {'success': False, 'error': str(e)}\r\n\r\ndef download_file(file_path):\r\n    \"\"\"Lee un archivo y lo devuelve en base64.\"\"\"\r\n    try:\r\n        with open(file_path, 'rb') as f:\r\n            file_data = base64.b64encode(f.read()).decode()\r\n        return {'success': True, 'data': file_data}\r\n    except Exception as e:\r\n        return {'success': False, 'error': str(e)}\r\n\r\ndef delete_file(path):\r\n    \"\"\"Elimina un archivo o directorio.\"\"\"\r\n    try:\r\n        if os.path.isfile(path):\r\n            os.remove(path)\r\n        elif os.path.isdir(path):\r\n            shutil.rmtree(path)\r\n        return {'success': True}\r\n    except Exception as e:\r\n        return {'success': False, 'error': str(e)}\r\n\r\ndef create_directory(path):\r\n    \"\"\"Crea un nuevo directorio.\"\"\"\r\n    try:\r\n        os.makedirs(path, exist_ok=True)\r\n        return {'success': True}\r\n    except Exception as e:\r\n        return {'success': False, 'error': str(e)}\r\n"
+        }
+    ]
+}
